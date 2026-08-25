@@ -22,7 +22,10 @@ export interface PageReader {
 }
 
 export interface SyllabusPageReader extends PageReader {
-  searchSyllabus(courseName: string): Promise<PageSnapshot>;
+  searchSyllabus(
+    courseName: string,
+    instructorName?: string,
+  ): Promise<PageSnapshot>;
 }
 
 export interface PortalAccessState {
@@ -30,6 +33,15 @@ export interface PortalAccessState {
   text: string;
   status?: number;
   hadAuthenticatedCookies: boolean;
+}
+
+export interface RequestAuditSnapshot {
+  totalRequestsSeen: number;
+  readRequestsAllowed: number;
+  syllabusSearchPostsAllowed: number;
+  moodleReadPostsAllowed: number;
+  unsafeRequestsBlockedBeforeSend: number;
+  mutationRequestsAllowed: number;
 }
 
 export function detectPortalAccessFailure(
@@ -69,6 +81,14 @@ export function detectPortalAccessFailure(
 
 export class BrowserSession implements PageReader {
   readonly #guard = new ReadOnlyGuard();
+  readonly #audit = {
+    totalRequestsSeen: 0,
+    readRequestsAllowed: 0,
+    syllabusSearchPostsAllowed: 0,
+    moodleReadPostsAllowed: 0,
+    unsafeRequestsBlockedBeforeSend: 0,
+    mutationRequestsAllowed: 0,
+  };
   #contextPromise: Promise<BrowserContext> | undefined;
 
   constructor(private readonly config: AppConfig) {}
@@ -81,6 +101,7 @@ export class BrowserSession implements PageReader {
     try {
       const response = await this.navigate(page, url);
       await this.detectFailure(page, response, hadAuthenticatedCookies);
+      await this.waitForDynamicReadContent(page);
       return {
         url: page.url(),
         html: await page.content(),
@@ -91,7 +112,10 @@ export class BrowserSession implements PageReader {
     }
   }
 
-  async searchSyllabus(courseName: string): Promise<PageSnapshot> {
+  async searchSyllabus(
+    courseName: string,
+    instructorName?: string,
+  ): Promise<PageSnapshot> {
     const context = await this.context();
     const page = await context.newPage();
     try {
@@ -101,19 +125,10 @@ export class BrowserSession implements PageReader {
       );
       await this.detectFailure(page, initial, false);
       await page.locator('input[name="kamoku"]').fill(courseName);
-      await page
-        .locator('input[name="ControllerParameters"]')
-        .evaluate((element) => {
-          (element as HTMLInputElement).value = "JAA103SubCon";
-        });
-      await Promise.all([
-        page.waitForURL(/\/syllabus\/index\.php/, {
-          waitUntil: "domcontentloaded",
-        }),
-        page
-          .locator("form#cForm")
-          .evaluate((form) => (form as HTMLFormElement).submit()),
-      ]);
+      if (instructorName !== undefined)
+        await page.locator('input[name="kyoin"]').fill(instructorName);
+      await page.locator('input[name="btnSubmit"]').click();
+      await page.waitForLoadState("domcontentloaded");
       await this.detectFailure(page, null, false);
       return {
         url: page.url(),
@@ -129,6 +144,10 @@ export class BrowserSession implements PageReader {
     if (this.#contextPromise !== undefined)
       await (await this.#contextPromise).close();
     this.#contextPromise = undefined;
+  }
+
+  auditSnapshot(): RequestAuditSnapshot {
+    return { ...this.#audit };
   }
 
   private context(): Promise<BrowserContext> {
@@ -147,16 +166,39 @@ export class BrowserSession implements PageReader {
         serviceWorkers: "block",
       },
     );
+    try {
+      await context.setStorageState(this.config.authStatePath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
     context.setDefaultNavigationTimeout(this.config.navigationTimeoutMs);
     await context.route("**/*", async (route) => {
+      this.#audit.totalRequestsSeen += 1;
       try {
+        const method = route.request().method().toUpperCase();
         this.#guard.assertSafeRequest(
-          route.request().method(),
+          method,
           route.request().url(),
           route.request().postData(),
         );
+        const postType = this.#guard.classifyAllowedPost(
+          method,
+          route.request().url(),
+          route.request().postData(),
+        );
+        if (
+          !["GET", "HEAD", "OPTIONS"].includes(method) &&
+          postType === undefined
+        )
+          this.#audit.mutationRequestsAllowed += 1;
+        if (postType === "syllabus_search")
+          this.#audit.syllabusSearchPostsAllowed += 1;
+        else if (postType === "moodle_read")
+          this.#audit.moodleReadPostsAllowed += 1;
+        else this.#audit.readRequestsAllowed += 1;
         await route.continue();
       } catch {
+        this.#audit.unsafeRequestsBlockedBeforeSend += 1;
         await route.abort("blockedbyclient");
       }
     });
@@ -175,6 +217,22 @@ export class BrowserSession implements PageReader {
           cause: error instanceof Error ? error.message : String(error),
         },
       );
+    }
+  }
+
+  private async waitForDynamicReadContent(page: Page): Promise<void> {
+    const url = new URL(page.url());
+    if (
+      url.origin === "https://wsdmoodle.waseda.jp" &&
+      url.pathname === "/my/courses.php"
+    ) {
+      await page
+        .waitForFunction(
+          () => document.querySelector('a[href*="/course/view.php"]') !== null,
+          undefined,
+          { timeout: Math.min(this.config.navigationTimeoutMs, 10_000) },
+        )
+        .catch(() => undefined);
     }
   }
 

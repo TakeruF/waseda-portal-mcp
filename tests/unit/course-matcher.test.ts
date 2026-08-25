@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { matchCourseToSyllabus } from "../../src/adapters/waseda/matching/course-matcher.js";
+import {
+  matchCourseToSyllabus,
+  syllabusInstructorSearchQuery,
+  syllabusSearchQuery,
+} from "../../src/adapters/waseda/matching/course-matcher.js";
 import type { Course, Syllabus } from "../../src/core/models/schemas.js";
 
 const ref = {
@@ -33,6 +37,18 @@ const syllabus: Syllabus = {
 };
 
 describe("course matcher", () => {
+  it("drops only a trailing Moodle class section from the search query", () => {
+    expect(syllabusSearchQuery("合成科目 データ 科学 ０１")).toBe("合成科目");
+    expect(syllabusSearchQuery("English Course A02")).toBe("English Course");
+  });
+
+  it("uses only the stable surname portion for an instructor search", () => {
+    expect(syllabusInstructorSearchQuery("SYNTHETIC, Example Name")).toBe(
+      "SYNTHETIC",
+    );
+    expect(syllabusInstructorSearchQuery("山田 例")).toBe("山田");
+  });
+
   it("confirms a uniquely strong multi-field match and exposes evidence", () => {
     const result = matchCourseToSyllabus(course, [
       syllabus,
@@ -58,5 +74,15 @@ describe("course matcher", () => {
     expect(result.decision).toBe("ambiguous");
     expect(result.syllabus).toBeUndefined();
     expect(result.candidates).toHaveLength(2);
+  });
+
+  it("returns weak candidates as ambiguous instead of confirming them", () => {
+    const result = matchCourseToSyllabus(
+      { ...course, name: "unrelated", instructors: undefined },
+      [syllabus],
+    );
+    expect(result.decision).toBe("ambiguous");
+    expect(result.syllabus).toBeUndefined();
+    expect(result.candidates).toHaveLength(1);
   });
 });

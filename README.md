@@ -27,9 +27,9 @@ npm run build
 npm run auth
 ```
 
-`npm run auth`（またはビルド後の`waseda-portal-mcp auth`）は専用Chromeプロファイルを開きます。MyWasedaへのログイン操作はユーザー本人がChrome上で行い、完了後にウィンドウを閉じてください。CLIはユーザー名・パスワードを要求しません。既存ChromeプロファイルのCookieもコピーしません。
+`npm run auth`（またはビルド後の`waseda-portal-mcp auth`）は専用Chromeプロファイルを開きます。Waseda MoodleとMyWasedaへのログインはユーザー本人がChrome上で行い、最後にMyWasedaの「授業 → 授業関連 → 休講」を開いてください。休講ページへの到達をURLだけで確認すると、認証状態を保存して専用Chromeを自動で閉じます。CLIはユーザー名・パスワードを要求しません。既存Chromeプロファイルや通常利用中のCookieもコピーしません。
 
-既定の専用プロファイルは`~/.waseda-portal-mcp/chrome-profile`です。リポジトリ外の別の場所にする場合は`WASEDA_PORTAL_PROFILE_DIR`を設定します。同じプロファイルを使うChromeとMCPサーバーは同時に起動できません。
+既定の専用プロファイルは`~/.waseda-portal-mcp/chrome-profile`、サーバーが読み込む認証状態は`~/.waseda-portal-mcp/auth-state.json`です。どちらもリポジトリ外にあり、認証状態ファイルはowner-only（0600）にします。場所は`WASEDA_PORTAL_PROFILE_DIR`と`WASEDA_PORTAL_AUTH_STATE_PATH`で変更できます。同じ専用プロファイルを使うChromeとMCPサーバーは同時に起動できません。
 
 ## MCPクライアント設定
 
@@ -62,13 +62,15 @@ npm run auth
 
 通常取得はページ表示とDOM読み取りだけです。`ReadOnlyGuard`は課題提出、アップロード、小テスト・アンケート回答、出欠、完了変更、予定作成、投稿、メッセージ、履修変更などの既知URLと、許可されていない非GETリクエストを拒否します。
 
-Webシラバスの公式検索フォームだけは、検索であるにもかかわらずHTTP POSTを使います。このため、公式ホスト・`/syllabus/index.php`・read-only controller `JAA103SubCon`がすべて一致する検索POSTのみを狭く許可しています。詳細ページはGETで読みます。認証フローは別プロセスで、認証情報の入力・送信はユーザー本人の操作です。
+Webシラバスの公式検索フォームだけは、検索であるにもかかわらずHTTP POSTを使います。このため、公式ホスト・`/syllabus/JAA101.php`・read-only controller `JAA103SubCon`がすべて一致する検索POSTのみを狭く許可しています。Moodleの遅延読み込みも、`/lib/ajax/service.php`に対する既知の参照専用メソッドだけを許可します。詳細ページはGETで読みます。認証フローは別プロセスで、認証情報の入力・送信はユーザー本人の操作です。
 
 成績、評点、教員フィードバック、提出ファイル名はモデルに存在せず、通常レスポンスにも含まれません。Moodle外部カレンダートークンは発行・保存・利用しません。
 
 ## 個人情報とキャッシュ
 
-認証済みHTMLはメモリ上で解析後に破棄し、永続保存しません。Cookieとセッショントークンは専用Chromeプロファイル内だけにあり、MCPレスポンスやログへ出しません。正規化済みの最小データだけをプロセスメモリへ既定5分間キャッシュします。TTLは`WASEDA_PORTAL_CACHE_TTL_MS`、無効化は`--no-cache`または`WASEDA_PORTAL_CACHE=false`です。
+認証済みHTMLはメモリ上で解析後に破棄し、永続保存しません。Cookieとセッショントークンはリポジトリ外の専用プロファイルと認証状態ファイルだけにあり、MCPレスポンスやログへ出しません。正規化済みの最小データだけをプロセスメモリへ既定5分間キャッシュします。TTLは`WASEDA_PORTAL_CACHE_TTL_MS`、無効化は`--no-cache`または`WASEDA_PORTAL_CACHE=false`です。
+
+確定できた`courseId → syllabusKey`だけは、再検索を減らすため`~/.waseda-portal-mcp/cache/course-syllabus-map.json`へ保存できます。この対応表に科目名、担当者名、学生番号などは含めず、ディレクトリ0700・ファイル0600で原子的に更新します。曖昧候補や一致なしは保存しません。
 
 fixtureはすべて人工データです。実データをissue、ログ、fixture、テスト出力へ貼らないでください。詳細は[SECURITY.md](SECURITY.md)を参照してください。
 
@@ -86,17 +88,19 @@ npm run typecheck
 npm run lint
 npm run format:check
 npm run build
-npm run test:live    # 明示的なライブ確認。少数のread-onlyページのみ
+npm run test:live:auth-state     # 新規一時プロファイルでAUTH_REQUIREDを確認
+npm run test:live:authenticated  # 認証必須。AUTH_REQUIRED/SESSION_EXPIREDは失敗
+npm run test:e2e:authenticated   # ビルド後、MCPクライアントからstdio E2E
 ```
 
-`test:live`は専用プロファイルの認証状態を使用します。未認証なら安全に`AUTH_REQUIRED`または`SESSION_EXPIRED`を確認するだけです。fixture成功はライブ動作確認の証拠ではありません。
+`test:live`は`test:live:authenticated`の別名です。認証必須ライブ検証は同時実行1、アクセス間隔1秒、正規科目1件、シラバス候補最大3件、課題詳細最大1件に制限します。未認証なら成功扱いにせず失敗します。fixture成功、認証済みライブ成功、MCPクライアントE2E成功は別々の証拠として扱ってください。
 
 ## 既知の制約
 
 - Moodle、MyWaseda、WebシラバスのDOM変更でparser更新が必要になる場合があります。
 - MyWasedaは履修科目向け初期表示のみで、学部全体表示のPOST操作は実装していません。
 - 授業回は、確定できたシラバスの曜日時限と学期・休業日から生成します。集中・補講・個別回の自由記述は断定しません。
-- Moodleとシラバスの照合は年度、開講箇所、正規化科目名、クラス、担当者、利用可能なら曜日時限を根拠にします。上位候補の差が小さい場合は候補だけを返し、教室・試験情報を確定しません。
+- Moodleとシラバスの照合は年度、開講箇所、正規化科目名、クラス、担当者、利用可能なら曜日時限を根拠にします。Moodle名とシラバス名が異なる場合は担当者の部分一致で候補を最大件数まで取得します。根拠が弱い、または上位候補の差が小さい場合は曖昧候補だけを返し、教室・試験情報を確定しません。
 - 常駐通知、書き込み、成績取得、教材一括取得、カレンダートークン、Chrome拡張、クラウド認証、リモートMCP、複数大学は対象外です。
 
 ## 他大学adapter

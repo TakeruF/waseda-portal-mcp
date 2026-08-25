@@ -2,15 +2,15 @@
 
 ## Scope and guarantees
 
-`waseda-portal-mcp` is intentionally local and read-only. Normal collection allows `GET`, `HEAD`, and `OPTIONS`. The only non-GET allowlist entry is the public Web Syllabus search form at `https://www.wsl.waseda.jp/syllabus/index.php` with the exact read-only controller `JAA103SubCon`; every other `POST` and known Moodle mutation path is blocked by `ReadOnlyGuard`.
+`waseda-portal-mcp` is intentionally local and read-only. Normal collection allows `GET`, `HEAD`, and `OPTIONS`. Non-GET requests are limited to two exact read operations: the public Web Syllabus search form at `https://www.wsl.waseda.jp/syllabus/JAA101.php` with controller `JAA103SubCon`, and Moodle `/lib/ajax/service.php` calls whose every method name is in the explicit read-only allowlist. Every other `POST` and known Moodle mutation path is blocked before send by `ReadOnlyGuard`.
 
-The authentication command is separate. It opens a dedicated Chrome profile and leaves credential entry and submission to the user in Chrome. The server never asks for, copies, prints, or returns credentials, cookies, session tokens, student numbers, names, grades, feedback, or submitted filenames.
+The authentication command is separate. It opens a dedicated Chrome profile and leaves credential entry and submission to the user in Chrome. The server never asks for, copies, or prints credentials, cookies, session tokens, student numbers, grades, feedback, or submitted filenames. Live tests and reports must not print real course, assignment, or person names. Normal MCP course and syllabus results may contain source-provided course or instructor fields requested by the local user; they are never written to fixtures, snapshots, or logs.
 
 ## Local data
 
-The dedicated profile contains authentication material and must be protected like a password. Its default location is `~/.waseda-portal-mcp/chrome-profile`, outside this repository, with a best-effort owner-only directory mode. Override it with `WASEDA_PORTAL_PROFILE_DIR` when needed.
+The dedicated profile and Playwright storage state contain authentication material and must be protected like passwords. Their defaults are `~/.waseda-portal-mcp/chrome-profile` and `~/.waseda-portal-mcp/auth-state.json`, outside this repository. The storage-state file is set to mode 0600. Override them with `WASEDA_PORTAL_PROFILE_DIR` and `WASEDA_PORTAL_AUTH_STATE_PATH` when needed. Never copy a normal Chrome profile into the dedicated profile.
 
-Only normalized model objects are cached, in process memory, for a configurable TTL. Authenticated raw HTML is not written to disk. `--no-cache` disables the normalized cache. Playwright itself persists the dedicated browser profile because that is the authentication mechanism.
+Only normalized model objects are cached in process memory for a configurable TTL. Authenticated raw HTML is not written to disk. `--no-cache` disables the normalized cache. A separate owner-only mapping cache may store confirmed `courseId → syllabusKey` pairs; it does not store course names, instructor names, or portal HTML. Ambiguous matches are not persisted.
 
 ## Reporting a vulnerability
 

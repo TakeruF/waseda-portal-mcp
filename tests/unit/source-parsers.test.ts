@@ -6,6 +6,7 @@ import {
   parseSyllabus,
   parseSyllabusSearch,
 } from "../../src/adapters/waseda/syllabus/syllabus-parser.js";
+import type { PortalError } from "../../src/core/errors/portal-error.js";
 import { fixtureSnapshot } from "../helpers/fixtures.js";
 
 describe("Waseda source parsers", () => {
@@ -25,6 +26,35 @@ describe("Waseda source parsers", () => {
       type: "room_change",
       effectiveDate: "2026-08-28",
     });
+  });
+
+  it("recognizes the current MyWaseda explicit empty state", () => {
+    expect(
+      parseClassChanges({
+        url: "https://class.waseda.jp/kyuko/epb3010.htm",
+        observedAt: new Date("2026-08-26T00:00:00Z"),
+        html: `<!doctype html><body class="basecolor">
+          <form method="post" action="epb3010.htm">
+            <input type="submit" name="s_mode">
+            <table class="subcolor"><tr><td>休講情報はありません</td></tr></table>
+          </form>
+        </body>`,
+      }),
+    ).toEqual([]);
+  });
+
+  it("does not confuse an unknown MyWaseda structure with no changes", () => {
+    expect(() =>
+      parseClassChanges({
+        url: "https://class.waseda.jp/kyuko/epb3010.htm",
+        observedAt: new Date("2026-08-26T00:00:00Z"),
+        html: "<!doctype html><body><main>synthetic unknown layout</main></body>",
+      }),
+    ).toThrow(
+      expect.objectContaining<Partial<PortalError>>({
+        code: "PAGE_STRUCTURE_CHANGED",
+      }),
+    );
   });
 
   it("extracts Web Syllabus detail, schedule, room, and mode", async () => {

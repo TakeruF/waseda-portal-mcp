@@ -32,10 +32,14 @@ import {
   matchCourseToSyllabus,
   normalizeCourseName,
 } from "./matching/course-matcher.js";
+import type { CourseSyllabusMappingCache } from "./matching/syllabus-mapping-cache.js";
 import type { WasedaSources } from "./sources.js";
 
 export class WasedaAdapter implements UniversityAdapter {
-  constructor(private readonly sources: WasedaSources) {}
+  constructor(
+    private readonly sources: WasedaSources,
+    private readonly mappingCache?: CourseSyllabusMappingCache,
+  ) {}
 
   async listCourses(input: ListCoursesInput = {}): Promise<Course[]> {
     const { includeNonRegular } = listCoursesInputSchema.parse(input);
@@ -110,12 +114,21 @@ export class WasedaAdapter implements UniversityAdapter {
         "SOURCE_UNAVAILABLE",
         `Unknown courseId: ${input.courseId ?? ""}`,
       );
-    if (course.syllabusKey !== undefined)
-      return this.getSyllabusMatch({ syllabusKey: course.syllabusKey });
-    return matchCourseToSyllabus(
+    const mappedKey =
+      course.syllabusKey ?? (await this.mappingCache?.get(course.id));
+    if (mappedKey !== undefined) {
+      const match = await this.getSyllabusMatch({ syllabusKey: mappedKey });
+      if (course.syllabusKey !== undefined)
+        await this.mappingCache?.set(course.id, mappedKey);
+      return match;
+    }
+    const match = matchCourseToSyllabus(
       course,
       await this.sources.syllabusCandidates(course),
     );
+    if (match.decision === "confirmed" && match.syllabus !== undefined)
+      await this.mappingCache?.set(course.id, match.syllabus.key);
+    return match;
   }
 
   async listMeetings(input: DateRangeInput): Promise<ClassMeeting[]> {

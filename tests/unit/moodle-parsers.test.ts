@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { parseMoodleCourses } from "../../src/adapters/waseda/moodle/course-parser.js";
+import {
+  parseMoodleCourseInstructors,
+  parseMoodleCourseRegularity,
+  parseMoodleCourses,
+} from "../../src/adapters/waseda/moodle/course-parser.js";
 import { parseMoodleDeadlines } from "../../src/adapters/waseda/moodle/deadline-parser.js";
 import { enrichAssignmentDeadline } from "../../src/adapters/waseda/moodle/assignment-parser.js";
 import { PortalError } from "../../src/core/errors/portal-error.js";
@@ -57,6 +61,15 @@ describe("Moodle parsers", () => {
         observedAt: new Date(),
       }),
     ).toThrow(PortalError);
+  });
+
+  it("classifies a course from the full breadcrumb when the list only exposes a leaf category", async () => {
+    const snapshot = await fixtureSnapshot(
+      "moodle-course-detail.html",
+      "https://wsdmoodle.waseda.jp/course/view.php?id=101",
+    );
+    expect(parseMoodleCourseRegularity(snapshot)).toBe(true);
+    expect(parseMoodleCourseInstructors(snapshot)).toEqual(["山田 例"]);
   });
 
   it("enriches only normalized assignment timing and status from the detail page", async () => {

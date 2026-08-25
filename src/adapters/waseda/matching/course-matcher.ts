@@ -17,6 +17,28 @@ export function normalizeCourseName(value: string): string {
     .replace(/[a-z]?\d{2}$/i, "");
 }
 
+export function syllabusSearchQuery(value: string): string {
+  const withoutSection = value
+    .normalize("NFKC")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\s*[A-Z]?\d{2}$/i, "")
+    .trim();
+  const tokens = withoutSection.split(" ").filter(Boolean);
+  const first = tokens[0];
+  if (first === undefined) return withoutSection;
+  if (!/^[\x20-\x7e]+$/.test(first) && [...first].length >= 3) return first;
+  return tokens.slice(0, Math.min(2, tokens.length)).join(" ");
+}
+
+export function syllabusInstructorSearchQuery(value: string): string {
+  const normalized = value.normalize("NFKC").trim();
+  const surname = normalized.split(/[,、]/, 1)[0]?.trim();
+  if (surname !== undefined && surname !== "" && surname !== normalized)
+    return surname;
+  return normalized.split(/\s+/, 1)[0] ?? normalized;
+}
+
 function bigrams(value: string): Set<string> {
   if (value.length < 2) return new Set([value]);
   return new Set(
@@ -139,12 +161,19 @@ export function matchCourseToSyllabus(
     .map((syllabus) => ({ syllabus, ...evaluate(course, syllabus) }))
     .sort((left, right) => right.score - left.score);
   const top = ranked[0];
-  if (top === undefined || top.score < 0.45)
+  if (top === undefined)
     return {
-      confidence: top?.score ?? 0,
+      confidence: 0,
       decision: "none",
       candidates,
-      evidence: top?.evidence ?? [],
+      evidence: [],
+    };
+  if (top.score < 0.45)
+    return {
+      confidence: top.score,
+      decision: "ambiguous",
+      candidates: ranked.slice(0, 5).map(({ syllabus }) => syllabus),
+      evidence: top.evidence,
     };
   const margin = top.score - (ranked[1]?.score ?? 0);
   const decision =

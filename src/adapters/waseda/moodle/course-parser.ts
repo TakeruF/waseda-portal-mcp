@@ -15,7 +15,10 @@ export function parseMoodleCourses(snapshot: PageSnapshot): Course[] {
     return $(node).find('a[href*="/course/view.php?id="]').length > 0;
   });
   if (nodes.length === 0) {
-    if ($('[data-region="course-content"], #page-my-courses').length > 0)
+    if (
+      $('[data-region="course-content"], #page-my-courses, .page-mycourses')
+        .length > 0
+    )
       return [];
     throw new PortalError(
       "PAGE_STRUCTURE_CHANGED",
@@ -98,4 +101,28 @@ export function parseMoodleCourses(snapshot: PageSnapshot): Course[] {
       "Moodle courses lacked identifiers",
     );
   return [...courses.values()];
+}
+
+export function parseMoodleCourseRegularity(snapshot: PageSnapshot): boolean {
+  const $ = load(snapshot.html);
+  const breadcrumbs = $(
+    '.breadcrumb a, [aria-label*="breadcrumb"] a, .breadcrumb-item',
+  );
+  if (breadcrumbs.length === 0)
+    throw new PortalError(
+      "PAGE_STRUCTURE_CHANGED",
+      "Moodle course breadcrumb was not found",
+    );
+  return breadcrumbs
+    .map((_index, node) => cleanText($(node).text()))
+    .get()
+    .some((value) => value.startsWith("正規科目"));
+}
+
+export function parseMoodleCourseInstructors(snapshot: PageSnapshot): string[] {
+  const $ = load(snapshot.html);
+  return $(".block_messageteacher .messageteacher_link")
+    .map((_index, link) => cleanText($(link).text()))
+    .get()
+    .filter(Boolean);
 }

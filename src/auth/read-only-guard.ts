@@ -14,6 +14,15 @@ const MUTATION_PATHS = [
 ];
 const MUTATION_QUERY =
   /(?:^|[?&])(?:action|operation|method)=(?:submit|save|delete|update|complete|send|post|enrol|unenrol)(?:&|$)/i;
+const MOODLE_READ_ONLY_METHODS = new Set([
+  "core_course_get_enrolled_courses_by_timeline_classification",
+  "core_calendar_get_calendar_upcoming_view",
+  "core_calendar_get_calendar_monthly_view",
+  "core_calendar_get_action_events_by_timesort",
+  "media_videojs_get_language",
+]);
+
+export type AllowedReadOnlyPost = "syllabus_search" | "moodle_read";
 
 export class ReadOnlyGuard {
   assertSafeRequest(
@@ -33,9 +42,18 @@ export class ReadOnlyGuard {
     const safeSyllabusSearch =
       normalizedMethod === "POST" &&
       url.origin === "https://www.wsl.waseda.jp" &&
-      url.pathname === "/syllabus/index.php" &&
+      url.pathname === "/syllabus/JAA101.php" &&
       safeSearchPayload;
-    if (!SAFE_METHODS.has(normalizedMethod) && !safeSyllabusSearch) {
+    const safeMoodleRead = this.isSafeMoodleReadPost(
+      normalizedMethod,
+      url,
+      postData,
+    );
+    if (
+      !SAFE_METHODS.has(normalizedMethod) &&
+      !safeSyllabusSearch &&
+      !safeMoodleRead
+    ) {
       throw new PortalError(
         "READ_ONLY_VIOLATION",
         `Blocked non-read request: ${normalizedMethod}`,
@@ -57,6 +75,59 @@ export class ReadOnlyGuard {
           url: this.redactUrl(rawUrl),
         },
       );
+    }
+  }
+
+  classifyAllowedPost(
+    method: string,
+    rawUrl: string,
+    postData?: string | null,
+  ): AllowedReadOnlyPost | undefined {
+    if (method.toUpperCase() !== "POST") return undefined;
+    const url = new URL(rawUrl);
+    if (
+      url.origin === "https://www.wsl.waseda.jp" &&
+      url.pathname === "/syllabus/JAA101.php" &&
+      postData !== undefined &&
+      postData !== null &&
+      (/(?:^|&)ControllerParameters=JAA103SubCon(?:&|$)/.test(postData) ||
+        /name="ControllerParameters"\r?\n\r?\nJAA103SubCon\r?\n/.test(postData))
+    )
+      return "syllabus_search";
+    return this.isSafeMoodleReadPost("POST", url, postData)
+      ? "moodle_read"
+      : undefined;
+  }
+
+  private isSafeMoodleReadPost(
+    method: string,
+    url: URL,
+    postData?: string | null,
+  ): boolean {
+    if (
+      method !== "POST" ||
+      url.origin !== "https://wsdmoodle.waseda.jp" ||
+      url.pathname !== "/lib/ajax/service.php" ||
+      postData === undefined ||
+      postData === null
+    )
+      return false;
+    try {
+      const calls: unknown = JSON.parse(postData);
+      return (
+        Array.isArray(calls) &&
+        calls.length > 0 &&
+        calls.every((call: unknown) => {
+          if (typeof call !== "object" || call === null) return false;
+          const methodName = (call as Record<string, unknown>)["methodname"];
+          return (
+            typeof methodName === "string" &&
+            MOODLE_READ_ONLY_METHODS.has(methodName)
+          );
+        })
+      );
+    } catch {
+      return false;
     }
   }
 

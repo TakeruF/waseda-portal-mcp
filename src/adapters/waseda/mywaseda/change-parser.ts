@@ -27,9 +27,48 @@ function normalizeDate(
 
 export function parseClassChanges(snapshot: PageSnapshot): CourseChange[] {
   const $ = load(snapshot.html);
-  const table = $(
+  const legacyForm = $("form").filter((_index, form) => {
+    const action = $(form).attr("action");
+    if (action === undefined || action === "") return false;
+    try {
+      const actionUrl = new URL(action, snapshot.url);
+      return (
+        actionUrl.origin === "https://class.waseda.jp" &&
+        actionUrl.pathname === "/kyuko/epb3010.htm"
+      );
+    } catch {
+      return false;
+    }
+  });
+  const hasLegacyPageMarker =
+    legacyForm.length > 0 && $('input[name="s_mode"]').length > 0;
+  const bodyText = cleanText($("body").text());
+  const hasExplicitEmptyState = [
+    "休講情報はありません",
+    "該当する休講情報はありません",
+    "該当する情報はありません",
+    "検索結果は0件",
+  ].some((signal) => bodyText.includes(signal));
+  if (hasLegacyPageMarker && hasExplicitEmptyState) return [];
+
+  const preferredTable = $(
     'table[data-source="class-changes"], table#changes, table.kyuko, #main table',
   ).first();
+  const semanticTable = $("table")
+    .filter((_index, candidate) => {
+      const headers = $(candidate)
+        .find("tr")
+        .first()
+        .find("th,td")
+        .map((_cellIndex, cell) => cleanText($(cell).text()))
+        .get();
+      return (
+        headers.some((header) => /^(?:科目名|科目|対象科目)$/.test(header)) &&
+        headers.some((header) => /^(?:休講日|対象日|日付)$/.test(header))
+      );
+    })
+    .first();
+  const table = preferredTable.length > 0 ? preferredTable : semanticTable;
   if (table.length === 0)
     throw new PortalError(
       "PAGE_STRUCTURE_CHANGED",

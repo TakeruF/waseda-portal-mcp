@@ -2,6 +2,7 @@
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 
 import { WasedaAdapter } from "./adapters/waseda/waseda-adapter.js";
+import { LocalSyllabusMappingCache } from "./adapters/waseda/matching/syllabus-mapping-cache.js";
 import { LiveWasedaSources } from "./adapters/waseda/sources.js";
 import { runAuth } from "./auth/auth-command.js";
 import { BrowserSession } from "./auth/browser-session.js";
@@ -22,7 +23,18 @@ async function main(): Promise<void> {
 
   const browser = new BrowserSession(config);
   const cache = new TtlCache(config.cacheEnabled, config.cacheTtlMs);
-  const adapter = new WasedaAdapter(new LiveWasedaSources(browser, cache));
+  const sources = new LiveWasedaSources(browser, cache, {
+    minAccessIntervalMs: config.minAccessIntervalMs,
+    ...(config.maxCourses === undefined
+      ? {}
+      : { maxCourses: config.maxCourses }),
+    maxSyllabusCandidates: config.maxSyllabusCandidates,
+    maxAssignmentDetails: config.maxAssignmentDetails,
+  });
+  const adapter = new WasedaAdapter(
+    sources,
+    new LocalSyllabusMappingCache(config.mappingCachePath),
+  );
   void serveStdio(() => createMcpServer(adapter));
   console.error("waseda-portal-mcp is listening on stdio (read-only)");
 

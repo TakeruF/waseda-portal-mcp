@@ -23,8 +23,11 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "start": "node dist/cli.js",
-    "test": "vitest run --exclude tests/live/**",
-    "test:live": "WASEDA_LIVE_TEST=1 vitest run tests/live",
+    "test": "vitest run tests/unit tests/integration",
+    "test:live": "npm run test:live:authenticated",
+    "test:live:auth-state": "vitest run tests/live/auth-state.live.test.ts --no-file-parallelism --maxWorkers=1",
+    "test:live:authenticated": "vitest run tests/live/authenticated.live.test.ts --no-file-parallelism --maxWorkers=1",
+    "test:e2e:authenticated": "vitest run tests/e2e/mcp-client.live.test.ts --no-file-parallelism --maxWorkers=1",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
@@ -45,6 +48,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@modelcontextprotocol/client": "^2.0.0",
     "@types/node": "^22.19.15",
     "eslint": "^10.0.1",
     "prettier": "^3.9.0",
