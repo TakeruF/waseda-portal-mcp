@@ -1,0 +1,56 @@
+{
+  "name": "waseda-portal-mcp",
+  "version": "0.1.0",
+  "description": "Unofficial read-only MCP server for Waseda University portals",
+  "type": "module",
+  "bin": {
+    "waseda-portal-mcp": "dist/cli.js"
+  },
+  "main": "dist/server.js",
+  "exports": "./dist/server.js",
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "auth": "tsx src/cli.ts auth",
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx src/cli.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "start": "node dist/cli.js",
+    "test": "vitest run --exclude tests/live/**",
+    "test:live": "WASEDA_LIVE_TEST=1 vitest run tests/live",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "mcp",
+    "waseda",
+    "moodle",
+    "read-only"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "cheerio": "^1.2.0",
+    "playwright": "^1.62.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.19.15",
+    "eslint": "^10.0.1",
+    "prettier": "^3.9.0",
+    "tsx": "^4.21.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.68.0",
+    "vitest": "^4.1.11"
+  }
+}

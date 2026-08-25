@@ -1,0 +1,104 @@
+import { describe, expect, it } from "vitest";
+
+import { parseAcademicCalendar } from "../../src/adapters/waseda/academic-calendar/calendar-parser.js";
+import { parseClassChanges } from "../../src/adapters/waseda/mywaseda/change-parser.js";
+import {
+  parseSyllabus,
+  parseSyllabusSearch,
+} from "../../src/adapters/waseda/syllabus/syllabus-parser.js";
+import { fixtureSnapshot } from "../helpers/fixtures.js";
+
+describe("Waseda source parsers", () => {
+  it("extracts cancellations and room changes", async () => {
+    const changes = parseClassChanges(
+      await fixtureSnapshot(
+        "class-changes.html",
+        "https://class.waseda.jp/kyuko/epb3010.htm",
+      ),
+    );
+    expect(changes).toHaveLength(2);
+    expect(changes[0]).toMatchObject({
+      type: "cancellation",
+      effectiveDate: "2026-07-23",
+    });
+    expect(changes[1]).toMatchObject({
+      type: "room_change",
+      effectiveDate: "2026-08-28",
+    });
+  });
+
+  it("extracts Web Syllabus detail, schedule, room, and mode", async () => {
+    const syllabus = parseSyllabus(
+      await fixtureSnapshot(
+        "syllabus.html",
+        "https://www.wsl.waseda.jp/syllabus/JAA104.php?pKey=SYNTH-101&pLng=jp",
+      ),
+    );
+    expect(syllabus).toMatchObject({
+      key: "SYNTH-101",
+      year: 2026,
+      school: "基幹理工学部",
+      deliveryMode: "in_person",
+      exam: "試験に関する合成記載。",
+    });
+    expect(syllabus.schedules[0]).toMatchObject({
+      weekday: 4,
+      period: "2",
+      room: "合成101室",
+      campus: "西早稲田",
+    });
+  });
+
+  it("extracts detail keys from the official JavaScript result links", async () => {
+    const urls = parseSyllabusSearch(
+      await fixtureSnapshot(
+        "syllabus-search.html",
+        "https://www.wsl.waseda.jp/syllabus/index.php",
+      ),
+    );
+    expect(urls).toHaveLength(2);
+    expect(urls[0]).toContain("pKey=SYNTH-101");
+  });
+
+  it("normalizes relevant academic calendar events", async () => {
+    const events = parseAcademicCalendar(
+      await fixtureSnapshot(
+        "academic-calendar.html",
+        "https://www.waseda.jp/academic-calendar",
+      ),
+    );
+    expect(events.map((item) => item.type)).toEqual([
+      "classes_start",
+      "break",
+      "holiday_classes",
+      "exam",
+    ]);
+    expect(events[1]).toMatchObject({ from: "2026-07-30", to: "2026-09-20" });
+  });
+
+  it("supports the official heading-and-paragraph academic calendar layout", async () => {
+    const events = parseAcademicCalendar(
+      await fixtureSnapshot(
+        "academic-calendar-current.html",
+        "https://www.waseda.jp/academic-calendar",
+      ),
+    );
+    expect(
+      events.some(
+        (item) => item.type === "classes_start" && item.from === "2026-04-11",
+      ),
+    ).toBe(true);
+    expect(
+      events.some(
+        (item) =>
+          item.type === "break" &&
+          item.from === "2026-12-22" &&
+          item.to === "2027-01-05",
+      ),
+    ).toBe(true);
+    expect(
+      events.filter((item) => item.type === "holiday_classes"),
+    ).toHaveLength(2);
+    expect(events.filter((item) => item.type === "no_classes")).toHaveLength(2);
+  });
+});
