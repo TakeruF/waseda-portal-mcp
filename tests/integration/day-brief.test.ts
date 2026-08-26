@@ -40,6 +40,14 @@ class FixtureSources implements WasedaSources {
   syllabusCandidates() {
     return Promise.resolve([this.syllabusValue]);
   }
+  searchSyllabusCatalog(input: { searchTerms: string[] }) {
+    return Promise.resolve([
+      {
+        syllabus: this.syllabusValue,
+        matchedSearchTerms: input.searchTerms,
+      },
+    ]);
+  }
   academicEvents() {
     return Promise.resolve(this.eventValues);
   }
@@ -90,6 +98,25 @@ describe("fixture-based Waseda integration", () => {
     expect(await adapter.listCourses({ includeNonRegular: true })).toHaveLength(
       2,
     );
+  });
+
+  it("searches the full catalog without requiring Moodle enrollment", async () => {
+    const byName = await adapter.searchSyllabi({
+      query: "人工知能概論",
+      mode: "course_name",
+      maxResults: 1,
+    });
+    expect(byName.results).toHaveLength(1);
+    expect(byName.results[0]?.syllabus.key).toBe("SYNTH-101");
+
+    const byContent = await adapter.searchSyllabi({
+      query: "合成された学習テーマを学びたい",
+      mode: "content",
+      relatedTerms: ["合成"],
+      maxResults: 1,
+    });
+    expect(byContent.searchTerms).toEqual(["合成"]);
+    expect(byContent.results[0]?.matchedTerms).toEqual(["合成"]);
   });
 
   it("excludes completed work and keeps overdue state", async () => {

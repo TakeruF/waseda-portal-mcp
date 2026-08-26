@@ -25,6 +25,7 @@ export interface SyllabusPageReader extends PageReader {
   searchSyllabus(
     courseName: string,
     instructorName?: string,
+    keyword?: string,
   ): Promise<PageSnapshot>;
 }
 
@@ -115,6 +116,7 @@ export class BrowserSession implements PageReader {
   async searchSyllabus(
     courseName: string,
     instructorName?: string,
+    keyword?: string,
   ): Promise<PageSnapshot> {
     const context = await this.context();
     const page = await context.newPage();
@@ -127,6 +129,8 @@ export class BrowserSession implements PageReader {
       await page.locator('input[name="kamoku"]').fill(courseName);
       if (instructorName !== undefined)
         await page.locator('input[name="kyoin"]').fill(instructorName);
+      if (keyword !== undefined)
+        await page.locator('input[name="keyword"]').fill(keyword);
       await page.locator('input[name="btnSubmit"]').click();
       await page.waitForLoadState("domcontentloaded");
       await this.detectFailure(page, null, false);
@@ -226,13 +230,20 @@ export class BrowserSession implements PageReader {
       url.origin === "https://wsdmoodle.waseda.jp" &&
       url.pathname === "/my/courses.php"
     ) {
-      await page
-        .waitForFunction(
-          () => document.querySelector('a[href*="/course/view.php"]') !== null,
-          undefined,
-          { timeout: Math.min(this.config.navigationTimeoutMs, 10_000) },
-        )
-        .catch(() => undefined);
+      const deadline =
+        Date.now() + Math.min(this.config.navigationTimeoutMs, 10_000);
+      let previousCount = -1;
+      let stableSince = Date.now();
+      while (Date.now() < deadline) {
+        const count = await page.locator('a[href*="/course/view.php"]').count();
+        if (count !== previousCount) {
+          previousCount = count;
+          stableSince = Date.now();
+        } else if (count > 0 && Date.now() - stableSince >= 1_000) {
+          return;
+        }
+        await page.waitForTimeout(250);
+      }
     }
   }
 

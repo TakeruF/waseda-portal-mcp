@@ -55,6 +55,20 @@ npm run auth
 - `list_deadlines`: ISO 8601の`from`・`to`内に期限がある活動を列挙。通常は提出済み・完了済みを除外
 - `list_changes`: 指定日範囲の休講・変更を列挙
 - `get_syllabus`: `courseId`または`syllabusKey`から詳細または曖昧な候補を返す
+- `search_syllabi`: 履修状況に関係なく、現年度のWebシラバスを科目名または内容から検索
+
+`search_syllabi`の`mode`は、既知の科目名なら`course_name`、学びたい内容から探すなら`content`です。内容検索では自然文を最大3語へ分解します。MCPクライアントは`relatedTerms`へ最大3個の短い関連語を渡すことで、検索回数と意図を明示できます。
+
+```json
+{
+  "query": "日本の貨幣の歴史を学びたい",
+  "mode": "content",
+  "relatedTerms": ["貨幣", "通貨", "経済史"],
+  "maxResults": 3
+}
+```
+
+結果には完全なシラバス、公式検索で一致した語、照合できたフィールド、字句的な関連度があります。内容検索は意味的な履修推薦や履修可否の保証ではありません。
 
 日時はISO 8601で保持し、元ページにタイムゾーンがなければ`Asia/Tokyo`として解釈します。全結果に取得元URLと確認時刻があります。競合時はMyWaseda、Moodle構造化情報、Webシラバス、自由記述の順です。
 
@@ -90,7 +104,9 @@ npm run format:check
 npm run build
 npm run test:live:auth-state     # 新規一時プロファイルでAUTH_REQUIREDを確認
 npm run test:live:authenticated  # 認証必須。AUTH_REQUIRED/SESSION_EXPIREDは失敗
+npm run test:live:catalog        # 公開シラバスの内容検索と科目名検索
 npm run test:e2e:authenticated   # ビルド後、MCPクライアントからstdio E2E
+npm run test:e2e:catalog         # search_syllabiのstdio E2E
 ```
 
 `test:live`は`test:live:authenticated`の別名です。認証必須ライブ検証は同時実行1、アクセス間隔1秒、正規科目1件、シラバス候補最大3件、課題詳細最大1件に制限します。未認証なら成功扱いにせず失敗します。fixture成功、認証済みライブ成功、MCPクライアントE2E成功は別々の証拠として扱ってください。
@@ -98,6 +114,8 @@ npm run test:e2e:authenticated   # ビルド後、MCPクライアントからstd
 ## 既知の制約
 
 - Moodle、MyWaseda、WebシラバスのDOM変更でparser更新が必要になる場合があります。
+- 内容検索は公式Webシラバスの全項目キーワード検索を使う字句検索です。同義語や抽象的な関心は`relatedTerms`で補い、最大3検索・最大5詳細に制限します。
+- 検索結果に表示される科目が実際に履修可能とは限りません。所属、学年、前提科目、定員、登録時期は別途公式情報で確認してください。
 - MyWasedaは履修科目向け初期表示のみで、学部全体表示のPOST操作は実装していません。
 - 授業回は、確定できたシラバスの曜日時限と学期・休業日から生成します。集中・補講・個別回の自由記述は断定しません。
 - Moodleとシラバスの照合は年度、開講箇所、正規化科目名、クラス、担当者、利用可能なら曜日時限を根拠にします。Moodle名とシラバス名が異なる場合は担当者の部分一致で候補を最大件数まで取得します。根拠が弱い、または上位候補の差が小さい場合は曖昧候補だけを返し、教室・試験情報を確定しません。

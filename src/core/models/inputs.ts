@@ -32,7 +32,20 @@ export const courseIdentifierSchema = z
     },
   );
 
+export const syllabusCatalogSearchInputSchema = z.object({
+  query: z.string().trim().min(2).max(120),
+  mode: z.enum(["course_name", "content"]).default("course_name"),
+  relatedTerms: z.array(z.string().trim().min(1).max(40)).max(3).default([]),
+  maxResults: z.number().int().min(1).max(5).default(3),
+});
+
 export type ListCoursesInput = z.input<typeof listCoursesInputSchema>;
 export type DateRangeInput = z.infer<typeof dateRangeInputSchema>;
 export type DeadlineQuery = z.input<typeof deadlineQuerySchema>;
 export type CourseIdentifier = z.infer<typeof courseIdentifierSchema>;
+export type SyllabusCatalogSearchInput = z.input<
+  typeof syllabusCatalogSearchInputSchema
+>;
+export type ParsedSyllabusCatalogSearchInput = z.infer<
+  typeof syllabusCatalogSearchInputSchema
+>;

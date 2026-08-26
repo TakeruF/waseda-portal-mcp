@@ -4,10 +4,12 @@ import type {
   DateRangeInput,
   DeadlineQuery,
   ListCoursesInput,
+  SyllabusCatalogSearchInput,
 } from "../../core/models/inputs.js";
 import {
   deadlineQuerySchema,
   listCoursesInputSchema,
+  syllabusCatalogSearchInputSchema,
 } from "../../core/models/inputs.js";
 import type {
   ClassMeeting,
@@ -16,11 +18,13 @@ import type {
   Deadline,
   Syllabus,
   SyllabusMatch,
+  SyllabusSearchHit,
 } from "../../core/models/schemas.js";
 import {
   courseSchema,
   deadlineSchema,
   syllabusSchema,
+  syllabusSearchHitSchema,
 } from "../../core/models/schemas.js";
 import {
   datesInRange,
@@ -32,6 +36,10 @@ import {
   matchCourseToSyllabus,
   normalizeCourseName,
 } from "./matching/course-matcher.js";
+import {
+  contentSearchTerms,
+  rankSyllabusCatalogCandidates,
+} from "./matching/syllabus-catalog-search.js";
 import type { CourseSyllabusMappingCache } from "./matching/syllabus-mapping-cache.js";
 import type { WasedaSources } from "./sources.js";
 
@@ -49,6 +57,31 @@ export class WasedaAdapter implements UniversityAdapter {
     return includeNonRegular
       ? courses
       : courses.filter((course) => course.regular);
+  }
+
+  async searchSyllabi(input: SyllabusCatalogSearchInput): Promise<{
+    searchTerms: string[];
+    results: SyllabusSearchHit[];
+  }> {
+    const query = syllabusCatalogSearchInputSchema.parse(input);
+    const searchTerms =
+      query.mode === "course_name"
+        ? [query.query]
+        : contentSearchTerms(query.query, query.relatedTerms);
+    const candidates = await this.sources.searchSyllabusCatalog({
+      mode: query.mode,
+      searchTerms,
+      maxResults: query.maxResults,
+    });
+    return {
+      searchTerms,
+      results: rankSyllabusCatalogCandidates(
+        candidates,
+        query.query,
+        searchTerms,
+        query.mode,
+      ).map((hit) => syllabusSearchHitSchema.parse(hit)),
+    };
   }
 
   async listDeadlines(input: DeadlineQuery): Promise<Deadline[]> {

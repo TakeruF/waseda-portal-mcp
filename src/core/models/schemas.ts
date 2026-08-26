@@ -149,6 +149,15 @@ export const syllabusMatchSchema = z.object({
   evidence: z.array(matchEvidenceSchema),
 });
 
+export const syllabusSearchHitSchema = z.object({
+  syllabus: syllabusSchema,
+  relevanceScore: z.number().min(0).max(1),
+  matchedTerms: z.array(z.string()),
+  matchedFields: z.array(
+    z.enum(["courseName", "overview", "plan", "evaluation", "exam"]),
+  ),
+});
+
 export type SourceReference = z.infer<typeof sourceReferenceSchema>;
 export type Course = z.infer<typeof courseSchema>;
 export type ClassMeeting = z.infer<typeof classMeetingSchema>;
@@ -157,3 +166,4 @@ export type CourseChange = z.infer<typeof courseChangeSchema>;
 export type Syllabus = z.infer<typeof syllabusSchema>;
 export type AcademicEvent = z.infer<typeof academicEventSchema>;
 export type SyllabusMatch = z.infer<typeof syllabusMatchSchema>;
+export type SyllabusSearchHit = z.infer<typeof syllabusSearchHitSchema>;

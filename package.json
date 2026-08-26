@@ -27,7 +27,9 @@
     "test:live": "npm run test:live:authenticated",
     "test:live:auth-state": "vitest run tests/live/auth-state.live.test.ts --no-file-parallelism --maxWorkers=1",
     "test:live:authenticated": "vitest run tests/live/authenticated.live.test.ts --no-file-parallelism --maxWorkers=1",
+    "test:live:catalog": "vitest run tests/live/syllabus-catalog.live.test.ts --no-file-parallelism --maxWorkers=1",
     "test:e2e:authenticated": "vitest run tests/e2e/mcp-client.live.test.ts --no-file-parallelism --maxWorkers=1",
+    "test:e2e:catalog": "vitest run tests/e2e/syllabus-catalog-client.live.test.ts --no-file-parallelism --maxWorkers=1",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

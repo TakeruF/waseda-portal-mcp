@@ -14,6 +14,8 @@ import {
   listCoursesOutputSchema,
   listDeadlinesOutputSchema,
   listDeadlinesToolInputSchema,
+  searchSyllabiInputSchema,
+  searchSyllabiOutputSchema,
 } from "./tools/schemas.js";
 
 const READ_ONLY_ANNOTATIONS = {
@@ -50,7 +52,7 @@ export function createMcpServer(adapter: WasedaAdapter): McpServer {
     { name: "waseda-portal-mcp", version: "0.1.0" },
     {
       instructions:
-        "Unofficial read-only Waseda portal integration. Treat provenance and warnings as authoritative; never infer a room, exam, or syllabus match when ambiguity is reported.",
+        "Unofficial read-only Waseda portal integration. Use search_syllabi with mode=course_name for any known title and mode=content for a learning goal. For content discovery, provide up to three concise relatedTerms when useful. Treat provenance and warnings as authoritative; never infer enrollment eligibility, a room, exam, or syllabus match when ambiguity is reported.",
     },
   );
 
@@ -162,6 +164,40 @@ export function createMcpServer(adapter: WasedaAdapter): McpServer {
         return success(
           getSyllabusOutputSchema.parse({
             match: await adapter.getSyllabusMatch(input),
+            observedAt: new Date().toISOString(),
+          }),
+        );
+      } catch (error) {
+        return failure(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "search_syllabi",
+    {
+      title: "Search the Waseda syllabus catalog",
+      description:
+        "Search all current Web Syllabi without requiring Moodle enrollment. Use mode=course_name for a known title. Use mode=content for a learning goal or topic; relatedTerms may contain up to three concise topic synonyms. Results are limited, read-only, and include full syllabus data plus lexical relevance evidence.",
+      inputSchema: searchSyllabiInputSchema,
+      outputSchema: searchSyllabiOutputSchema,
+      annotations: READ_ONLY_ANNOTATIONS,
+    },
+    async (input) => {
+      try {
+        const query = searchSyllabiInputSchema.parse(input);
+        const result = await adapter.searchSyllabi(query);
+        return success(
+          searchSyllabiOutputSchema.parse({
+            query: query.query,
+            mode: query.mode,
+            ...result,
+            warnings:
+              query.mode === "content"
+                ? [
+                    "Content relevance is lexical and based on the official full-field Web Syllabus search; confirm enrollment rules separately.",
+                  ]
+                : [],
             observedAt: new Date().toISOString(),
           }),
         );

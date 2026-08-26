@@ -11,4 +11,6 @@ Data flow:
 
 Live source reads pass through one serial limiter. Authenticated validation uses one course, one assignment detail at most, one Web Syllabus search, three syllabus candidates at most, and a one-second minimum interval. Priority is MyWaseda change notices, Moodle structured activity state and time, Web Syllabus schedule and room, free text, then unconfirmed inference. A weak or close syllabus match is returned as ambiguous candidates; it is not used to assert a meeting room or exam.
 
+Catalog discovery is independent of Moodle enrollment. `course_name` uses the official partial-title field once. `content` uses the official full-field keyword search with one to three explicit or locally segmented terms. Candidate URLs are deduplicated before at most five detail reads, then ranked lexically from official matches and parsed syllabus fields. No catalog corpus or query result is persisted to disk.
+
 To add another university, implement `UniversityAdapter` in the same package first. Do not add provider fields to common models unless they describe a user-facing concept shared across institutions. Keep authentication, selectors, and match rules in that adapter. A package split is only justified after a second adapter demonstrates a real boundary.

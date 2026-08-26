@@ -4,6 +4,8 @@
 
 `waseda-portal-mcp` is intentionally local and read-only. Normal collection allows `GET`, `HEAD`, and `OPTIONS`. Non-GET requests are limited to two exact read operations: the public Web Syllabus search form at `https://www.wsl.waseda.jp/syllabus/JAA101.php` with controller `JAA103SubCon`, and Moodle `/lib/ajax/service.php` calls whose every method name is in the explicit read-only allowlist. Every other `POST` and known Moodle mutation path is blocked before send by `ReadOnlyGuard`.
 
+Catalog search uses the same exact Web Syllabus allowlist entry. A name search sends one form search. A content search sends at most three serial keyword searches and reads at most five detail pages. It does not crawl or persist the catalog, and it does not use an external model or search provider.
+
 The authentication command is separate. It opens a dedicated Chrome profile and leaves credential entry and submission to the user in Chrome. The server never asks for, copies, or prints credentials, cookies, session tokens, student numbers, grades, feedback, or submitted filenames. Live tests and reports must not print real course, assignment, or person names. Normal MCP course and syllabus results may contain source-provided course or instructor fields requested by the local user; they are never written to fixtures, snapshots, or logs.
 
 ## Local data

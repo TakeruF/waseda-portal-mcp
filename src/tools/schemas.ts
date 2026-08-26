@@ -6,7 +6,9 @@ import {
   courseSchema,
   deadlineSchema,
   syllabusMatchSchema,
+  syllabusSearchHitSchema,
 } from "../core/models/schemas.js";
+import { syllabusCatalogSearchInputSchema } from "../core/models/inputs.js";
 
 export const getDayBriefInputSchema = z.object({
   date: z.iso.date(),
@@ -36,6 +38,8 @@ export const getSyllabusInputSchema = z
     },
   );
 
+export const searchSyllabiInputSchema = syllabusCatalogSearchInputSchema;
+
 export const dayBriefSchema = z.object({
   date: z.iso.date(),
   meetings: z.array(classMeetingSchema),
@@ -60,6 +64,14 @@ export const listChangesOutputSchema = z.object({
 });
 export const getSyllabusOutputSchema = z.object({
   match: syllabusMatchSchema,
+  observedAt: z.iso.datetime({ offset: true }),
+});
+export const searchSyllabiOutputSchema = z.object({
+  query: z.string(),
+  mode: z.enum(["course_name", "content"]),
+  searchTerms: z.array(z.string()),
+  results: z.array(syllabusSearchHitSchema),
+  warnings: z.array(z.string()),
   observedAt: z.iso.datetime({ offset: true }),
 });
 

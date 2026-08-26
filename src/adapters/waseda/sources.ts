@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type { SyllabusPageReader } from "../../auth/browser-session.js";
 import { WASEDA_URLS } from "../../config/urls.js";
 import type { TtlCache } from "../../core/cache/ttl-cache.js";
@@ -9,6 +11,7 @@ import type {
   Syllabus,
 } from "../../core/models/schemas.js";
 import { parseAcademicCalendar } from "./academic-calendar/calendar-parser.js";
+import { type SyllabusCatalogCandidate } from "./matching/syllabus-catalog-search.js";
 import {
   syllabusInstructorSearchQuery,
   syllabusSearchQuery,
@@ -32,6 +35,11 @@ export interface WasedaSources {
   changes(): Promise<CourseChange[]>;
   syllabusByKey(key: string): Promise<Syllabus>;
   syllabusCandidates(course: Course): Promise<Syllabus[]>;
+  searchSyllabusCatalog(input: {
+    mode: "course_name" | "content";
+    searchTerms: string[];
+    maxResults: number;
+  }): Promise<SyllabusCatalogCandidate[]>;
   academicEvents(): Promise<AcademicEvent[]>;
 }
 
@@ -108,9 +116,13 @@ export class LiveWasedaSources implements WasedaSources {
     return this.#limiter.run(() => this.reader.read(url));
   }
 
-  private searchSyllabus(courseName: string, instructorName?: string) {
+  private searchSyllabus(
+    courseName: string,
+    instructorName?: string,
+    keyword?: string,
+  ) {
     return this.#limiter.run(() =>
-      this.reader.searchSyllabus(courseName, instructorName),
+      this.reader.searchSyllabus(courseName, instructorName, keyword),
     );
   }
 
@@ -217,6 +229,50 @@ export class LiveWasedaSources implements WasedaSources {
       const candidates: Syllabus[] = [];
       for (const url of urls)
         candidates.push(parseSyllabus(await this.read(url)));
+      return candidates;
+    });
+  }
+
+  searchSyllabusCatalog(input: {
+    mode: "course_name" | "content";
+    searchTerms: string[];
+    maxResults: number;
+  }): Promise<SyllabusCatalogCandidate[]> {
+    const effectiveMax = Math.min(
+      Math.max(1, input.maxResults),
+      this.#maxSyllabusCandidates,
+    );
+    const cacheKey = createHash("sha256")
+      .update(JSON.stringify({ ...input, maxResults: effectiveMax }))
+      .digest("hex")
+      .slice(0, 24);
+    return this.cache.getOrLoad(`syllabus:catalog:${cacheKey}`, async () => {
+      const urls = new Map<
+        string,
+        { url: string; matchedSearchTerms: Set<string> }
+      >();
+      for (const term of input.searchTerms) {
+        const result =
+          input.mode === "course_name"
+            ? await this.searchSyllabus(term)
+            : await this.searchSyllabus("", undefined, term);
+        for (const url of parseSyllabusSearch(result)) {
+          const existing = urls.get(url);
+          if (existing !== undefined) {
+            existing.matchedSearchTerms.add(term);
+            continue;
+          }
+          if (urls.size >= effectiveMax) continue;
+          urls.set(url, { url, matchedSearchTerms: new Set([term]) });
+        }
+      }
+      const candidates: SyllabusCatalogCandidate[] = [];
+      for (const { url, matchedSearchTerms } of urls.values()) {
+        candidates.push({
+          syllabus: parseSyllabus(await this.read(url)),
+          matchedSearchTerms: [...matchedSearchTerms],
+        });
+      }
       return candidates;
     });
   }
