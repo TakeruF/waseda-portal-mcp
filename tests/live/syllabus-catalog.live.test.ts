@@ -27,6 +27,14 @@ describe("public Web Syllabus catalog live validation", () => {
         maxSyllabusCandidates: 2,
         maxAssignmentDetails: 0,
       }),
+      undefined,
+      {
+        schemaVersion: 1,
+        affiliations: ["例示学部"],
+        academicLevel: "undergraduate",
+        year: 3,
+        completedPrerequisites: [],
+      },
     );
     try {
       const content = await adapter.searchSyllabi({
@@ -38,6 +46,11 @@ describe("public Web Syllabus catalog live validation", () => {
       requireCheck(
         content.results.length > 0,
         "Content catalog search returned no safe candidates",
+      );
+      requireCheck(
+        content.profileApplied &&
+          content.results.every((hit) => hit.eligibility !== undefined),
+        "Synthetic academic profile was not applied to catalog results",
       );
       for (const hit of content.results) syllabusSearchHitSchema.parse(hit);
 

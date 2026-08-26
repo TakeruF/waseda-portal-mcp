@@ -68,6 +68,10 @@ describe("Waseda source parsers", () => {
       key: "SYNTH-101",
       year: 2026,
       school: "基幹理工学部",
+      allocatedYear: "学部2年以上",
+      eligibleAffiliations: "例示学部の学生のみ",
+      prerequisites: "合成基礎科目",
+      eligibilityNotes: ["履修条件は人工データによる。"],
       deliveryMode: "in_person",
       exam: "試験に関する合成記載。",
     });

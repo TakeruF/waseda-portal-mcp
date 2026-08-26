@@ -37,6 +37,7 @@ export const syllabusCatalogSearchInputSchema = z.object({
   mode: z.enum(["course_name", "content"]).default("course_name"),
   relatedTerms: z.array(z.string().trim().min(1).max(40)).max(3).default([]),
   maxResults: z.number().int().min(1).max(5).default(3),
+  useAcademicProfile: z.boolean().default(true),
 });
 
 export type ListCoursesInput = z.input<typeof listCoursesInputSchema>;

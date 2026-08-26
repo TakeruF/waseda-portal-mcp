@@ -6,6 +6,7 @@ import type {
   ListCoursesInput,
   SyllabusCatalogSearchInput,
 } from "../../core/models/inputs.js";
+import type { AcademicProfile } from "../../core/models/academic-profile.js";
 import {
   deadlineQuerySchema,
   listCoursesInputSchema,
@@ -40,6 +41,7 @@ import {
   contentSearchTerms,
   rankSyllabusCatalogCandidates,
 } from "./matching/syllabus-catalog-search.js";
+import { assessSyllabusEligibility } from "./matching/eligibility-assessor.js";
 import type { CourseSyllabusMappingCache } from "./matching/syllabus-mapping-cache.js";
 import type { WasedaSources } from "./sources.js";
 
@@ -47,6 +49,7 @@ export class WasedaAdapter implements UniversityAdapter {
   constructor(
     private readonly sources: WasedaSources,
     private readonly mappingCache?: CourseSyllabusMappingCache,
+    private readonly academicProfile?: AcademicProfile,
   ) {}
 
   async listCourses(input: ListCoursesInput = {}): Promise<Course[]> {
@@ -61,6 +64,7 @@ export class WasedaAdapter implements UniversityAdapter {
 
   async searchSyllabi(input: SyllabusCatalogSearchInput): Promise<{
     searchTerms: string[];
+    profileApplied: boolean;
     results: SyllabusSearchHit[];
   }> {
     const query = syllabusCatalogSearchInputSchema.parse(input);
@@ -73,14 +77,25 @@ export class WasedaAdapter implements UniversityAdapter {
       searchTerms,
       maxResults: query.maxResults,
     });
+    const profile = query.useAcademicProfile ? this.academicProfile : undefined;
     return {
       searchTerms,
+      profileApplied: profile !== undefined,
       results: rankSyllabusCatalogCandidates(
         candidates,
         query.query,
         searchTerms,
         query.mode,
-      ).map((hit) => syllabusSearchHitSchema.parse(hit)),
+      ).map((hit) =>
+        syllabusSearchHitSchema.parse({
+          ...hit,
+          ...(profile === undefined
+            ? {}
+            : {
+                eligibility: assessSyllabusEligibility(hit.syllabus, profile),
+              }),
+        }),
+      ),
     };
   }
 

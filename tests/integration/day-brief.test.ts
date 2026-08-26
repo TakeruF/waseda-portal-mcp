@@ -107,6 +107,7 @@ describe("fixture-based Waseda integration", () => {
       maxResults: 1,
     });
     expect(byName.results).toHaveLength(1);
+    expect(byName.profileApplied).toBe(false);
     expect(byName.results[0]?.syllabus.key).toBe("SYNTH-101");
 
     const byContent = await adapter.searchSyllabi({

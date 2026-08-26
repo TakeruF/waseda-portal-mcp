@@ -105,6 +105,29 @@ export function parseSyllabus(snapshot: PageSnapshot): Syllabus {
     updatedRaw === undefined
       ? undefined
       : normalizeSourceDateTime(updatedRaw, year);
+  const allocatedYear = getValue(values, ["配当年次", "Allocated Year"]);
+  const eligibleAffiliations = getValue(values, [
+    "対象学生",
+    "対象者",
+    "対象学部",
+    "対象研究科",
+    "Eligible Students",
+  ]);
+  const prerequisites = getValue(values, [
+    "前提科目",
+    "Prerequisite",
+    "Prerequisites",
+  ]);
+  const eligibilityNotes = [
+    getValue(values, ["履修条件", "受講条件", "登録条件"]),
+    getValue(values, ["備考・関連URL", "備考", "Remarks"]),
+  ]
+    .filter((value): value is string => value !== undefined)
+    .filter((value) =>
+      /前提|履修条件|受講条件|登録条件|対象(?:学生|者|学部|研究科)|履修(?:不可|でき|可)/.test(
+        value,
+      ),
+    );
   return {
     key,
     year,
@@ -132,6 +155,10 @@ export function parseSyllabus(snapshot: PageSnapshot): Syllabus {
     ...(getValue(values, ["学期", "Term"]) === undefined
       ? {}
       : { term: getValue(values, ["学期", "Term"]) }),
+    ...(allocatedYear === undefined ? {} : { allocatedYear }),
+    ...(eligibleAffiliations === undefined ? {} : { eligibleAffiliations }),
+    ...(prerequisites === undefined ? {} : { prerequisites }),
+    ...(eligibilityNotes.length === 0 ? {} : { eligibilityNotes }),
     schedules: parseSchedules(scheduleRaw, room, campus),
     deliveryMode: deliveryMode(modeRaw),
     ...(updatedAt === undefined ? {} : { updatedAt }),

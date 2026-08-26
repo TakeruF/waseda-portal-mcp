@@ -5,6 +5,7 @@ export interface AppConfig {
   timezone: "Asia/Tokyo";
   profileDir: string;
   authStatePath: string;
+  academicProfilePath: string;
   mappingCachePath: string;
   cacheEnabled: boolean;
   cacheTtlMs: number;
@@ -31,6 +32,9 @@ export function loadConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     authStatePath:
       process.env.WASEDA_PORTAL_AUTH_STATE_PATH ??
       path.join(os.homedir(), ".waseda-portal-mcp", "auth-state.json"),
+    academicProfilePath:
+      process.env.WASEDA_PORTAL_ACADEMIC_PROFILE_PATH ??
+      path.join(os.homedir(), ".waseda-portal-mcp", "academic-profile.json"),
     mappingCachePath:
       process.env.WASEDA_PORTAL_MAPPING_CACHE_PATH ??
       path.join(

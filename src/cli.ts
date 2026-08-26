@@ -7,6 +7,7 @@ import { LiveWasedaSources } from "./adapters/waseda/sources.js";
 import { runAuth } from "./auth/auth-command.js";
 import { BrowserSession } from "./auth/browser-session.js";
 import { loadConfig } from "./config/config.js";
+import { loadAcademicProfile } from "./config/academic-profile.js";
 import { TtlCache } from "./core/cache/ttl-cache.js";
 import { createMcpServer } from "./server.js";
 
@@ -34,6 +35,7 @@ async function main(): Promise<void> {
   const adapter = new WasedaAdapter(
     sources,
     new LocalSyllabusMappingCache(config.mappingCachePath),
+    await loadAcademicProfile(config.academicProfilePath),
   );
   void serveStdio(() => createMcpServer(adapter));
   console.error("waseda-portal-mcp is listening on stdio (read-only)");

@@ -178,7 +178,7 @@ export function createMcpServer(adapter: WasedaAdapter): McpServer {
     {
       title: "Search the Waseda syllabus catalog",
       description:
-        "Search all current Web Syllabi without requiring Moodle enrollment. Use mode=course_name for a known title. Use mode=content for a learning goal or topic; relatedTerms may contain up to three concise topic synonyms. Results are limited, read-only, and include full syllabus data plus lexical relevance evidence.",
+        "Search all current Web Syllabi without requiring Moodle enrollment. Use mode=course_name for a known title. Use mode=content for a learning goal or topic; relatedTerms may contain up to three concise topic synonyms. If an owner-only local academic profile exists, useAcademicProfile=true adds advisory affiliation, year, and prerequisite checks without returning profile values.",
       inputSchema: searchSyllabiInputSchema,
       outputSchema: searchSyllabiOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
@@ -192,12 +192,18 @@ export function createMcpServer(adapter: WasedaAdapter): McpServer {
             query: query.query,
             mode: query.mode,
             ...result,
-            warnings:
-              query.mode === "content"
+            warnings: [
+              ...(query.mode === "content"
                 ? [
-                    "Content relevance is lexical and based on the official full-field Web Syllabus search; confirm enrollment rules separately.",
+                    "Content relevance is lexical and based on the official full-field Web Syllabus search.",
                   ]
-                : [],
+                : []),
+              ...(result.profileApplied
+                ? [
+                    "Eligibility checks are advisory; confirm school-specific rules, registration periods, capacity, and free-text conditions in official sources.",
+                  ]
+                : ["Confirm enrollment rules separately."]),
+            ],
             observedAt: new Date().toISOString(),
           }),
         );

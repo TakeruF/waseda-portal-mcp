@@ -14,6 +14,8 @@ The dedicated profile and Playwright storage state contain authentication materi
 
 Only normalized model objects are cached in process memory for a configurable TTL. Authenticated raw HTML is not written to disk. `--no-cache` disables the normalized cache. A separate owner-only mapping cache may store confirmed `courseId → syllabusKey` pairs; it does not store course names, instructor names, or portal HTML. Ambiguous matches are not persisted.
 
+An optional self-declared academic profile may be loaded from `~/.waseda-portal-mcp/academic-profile.json`, or from `WASEDA_PORTAL_ACADEMIC_PROFILE_PATH`. It may contain affiliation, academic level, year, and a deliberately limited list of prerequisite hints. The server does not infer or scrape these values. The file must be owned by the current user and have no group or other permissions (normally 0600). Profile values are held in process memory only, are not logged or cached, and are not copied into MCP responses; only redacted advisory check statuses are returned. Because prerequisite hints may reveal course history, omit them unless needed.
+
 ## Reporting a vulnerability
 
 Do not open a public issue containing credentials, cookies, real course data, personal information, or authenticated HTML. Contact the repository maintainer privately through the security-reporting channel shown on the GitHub repository. Include a minimal synthetic reproduction and the affected version.

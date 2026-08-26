@@ -94,6 +94,10 @@ export const syllabusSchema = z.object({
   school: z.string().optional(),
   instructors: z.array(z.string()),
   term: z.string().optional(),
+  allocatedYear: z.string().optional(),
+  eligibleAffiliations: z.string().optional(),
+  prerequisites: z.string().optional(),
+  eligibilityNotes: z.array(z.string()).optional(),
   schedules: z.array(syllabusScheduleSchema),
   deliveryMode: z.enum([
     "in_person",
@@ -156,6 +160,29 @@ export const syllabusSearchHitSchema = z.object({
   matchedFields: z.array(
     z.enum(["courseName", "overview", "plan", "evaluation", "exam"]),
   ),
+  eligibility: z
+    .object({
+      status: z.enum([
+        "potentially_eligible",
+        "likely_ineligible",
+        "review_required",
+        "unknown",
+      ]),
+      advisory: z.literal(true),
+      checks: z.array(
+        z.object({
+          criterion: z.enum(["affiliation", "year", "prerequisite"]),
+          status: z.enum([
+            "consistent",
+            "conflict",
+            "review_required",
+            "unavailable",
+          ]),
+          evidence: z.string().min(1),
+        }),
+      ),
+    })
+    .optional(),
 });
 
 export type SourceReference = z.infer<typeof sourceReferenceSchema>;
@@ -167,3 +194,7 @@ export type Syllabus = z.infer<typeof syllabusSchema>;
 export type AcademicEvent = z.infer<typeof academicEventSchema>;
 export type SyllabusMatch = z.infer<typeof syllabusMatchSchema>;
 export type SyllabusSearchHit = z.infer<typeof syllabusSearchHitSchema>;
+export type EligibilityAssessment = NonNullable<
+  SyllabusSearchHit["eligibility"]
+>;
+export type EligibilityCheck = EligibilityAssessment["checks"][number];

@@ -70,6 +70,7 @@ export const searchSyllabiOutputSchema = z.object({
   query: z.string(),
   mode: z.enum(["course_name", "content"]),
   searchTerms: z.array(z.string()),
+  profileApplied: z.boolean(),
   results: z.array(syllabusSearchHitSchema),
   warnings: z.array(z.string()),
   observedAt: z.iso.datetime({ offset: true }),
