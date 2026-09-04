@@ -1,6 +1,14 @@
 import type { CheerioAPI, Cheerio } from "cheerio";
 import type { AnyNode } from "domhandler";
 
+/**
+ * Marks a line the source actually draws. Source formatting newlines are not
+ * line breaks, so whitespace is collapsed first and only these markers survive
+ * into the result. U+2028 is a line separator that never appears in page text.
+ */
+const LINE_MARKER = "\u2028";
+const BLOCK_ELEMENTS = "p,div,li,tr,blockquote,h1,h2,h3,h4,h5,h6";
+
 export function cleanText(value: string): string {
   return value
     .replace(/\u00a0/g, " ")
@@ -8,17 +16,59 @@ export function cleanText(value: string): string {
     .trim();
 }
 
-export function labeledValues($: CheerioAPI): Map<string, string> {
+/** Collapses whitespace within each line while keeping the lines apart. */
+export function cleanMultilineText(value: string): string {
+  return value
+    .split(LINE_MARKER)
+    .map(cleanText)
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
+/**
+ * Reads an element's text with `<br>` and block boundaries turned into line
+ * markers. Cells are separated by a space so a table row stays one line.
+ */
+function markedText($: CheerioAPI, node: AnyNode): string {
+  const clone = $(node).clone();
+  clone.find("br").replaceWith(LINE_MARKER);
+  clone.find("td,th").append(" ");
+  clone.find(BLOCK_ELEMENTS).append(LINE_MARKER);
+  return clone.text();
+}
+
+export interface LabeledValueOptions {
+  /**
+   * Keep the line structure the source draws with `<br>` and nested rows.
+   * Callers that feed values to a date or status parser should leave this off.
+   */
+  preserveLineBreaks?: boolean;
+}
+
+export function labeledValues(
+  $: CheerioAPI,
+  options: LabeledValueOptions = {},
+): Map<string, string> {
   const values = new Map<string, string>();
+  const cleanValue = options.preserveLineBreaks
+    ? cleanMultilineText
+    : cleanText;
   const set = (rawKey: string, rawValue: string): void => {
     const key = cleanText(rawKey).replace(/[：:]$/, "");
-    const value = cleanText(rawValue);
+    const value = cleanValue(rawValue);
     if (key !== "" && value !== "") values.set(key, value);
   };
   const joinText = (cells: AnyNode[]): string =>
-    cells.map((cell) => $(cell).text()).join(" ");
+    cells
+      .map((cell) =>
+        options.preserveLineBreaks ? markedText($, cell) : $(cell).text(),
+      )
+      .join(" ");
   $("tr").each((_index, row) => {
-    const cells = $(row).find("th,td").toArray();
+    // Direct children only. A value that contains a nested table (the weekly
+    // plan, the grading breakdown) would otherwise pick up every nested cell
+    // a second time and repeat the whole block.
+    const cells = $(row).children("th,td").toArray();
     if (cells.length < 2) return;
     const isHeader = (cell: AnyNode): boolean =>
       (cell as unknown as { tagName?: string }).tagName === "th";
@@ -44,9 +94,14 @@ export function labeledValues($: CheerioAPI): Map<string, string> {
     set($(cells[0]).text(), joinText(cells.slice(1)));
   });
   $("dt").each((_index, node) => {
-    const key = cleanText($(node).text()).replace(/[：:]$/, "");
-    const value = cleanText($(node).next("dd").text());
-    if (key !== "" && value !== "") values.set(key, value);
+    const definition = $(node).next("dd")[0];
+    if (definition === undefined) return;
+    set(
+      $(node).text(),
+      options.preserveLineBreaks
+        ? markedText($, definition)
+        : $(definition).text(),
+    );
   });
   return values;
 }

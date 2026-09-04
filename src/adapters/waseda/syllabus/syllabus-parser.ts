@@ -74,7 +74,9 @@ function deliveryMode(value: string): Syllabus["deliveryMode"] {
 
 export function parseSyllabus(snapshot: PageSnapshot): Syllabus {
   const $ = load(snapshot.html);
-  const values = labeledValues($);
+  // Syllabus prose carries meaning in its line structure: grading rows, the
+  // weekly plan, and free text written with explicit breaks.
+  const values = labeledValues($, { preserveLineBreaks: true });
   const courseName =
     getValue(values, ["科目名", "Course Title"]) ??
     cleanText($("h1").first().text());
@@ -174,7 +176,7 @@ export function parseSyllabus(snapshot: PageSnapshot): Syllabus {
       ? {}
       : { school: getValue(values, ["開講学部", "開講箇所", "School"]) }),
     instructors: instructorsRaw
-      .split(/[、,／/]/)
+      .split(/[、,／/\n]/)
       .map(cleanText)
       .filter(Boolean),
     ...(term === undefined ? {} : { term }),

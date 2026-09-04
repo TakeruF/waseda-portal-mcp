@@ -114,6 +114,22 @@ describe("Waseda source parsers", () => {
     ]);
   });
 
+  it("keeps the line structure the syllabus draws", async () => {
+    const syllabus = parseSyllabus(
+      await fixtureSnapshot(
+        "syllabus-multipair.html",
+        "https://www.wsl.waseda.jp/syllabus/JAA104.php?pKey=SYNTH-MULTI-1&pLng=jp",
+      ),
+    );
+    expect(syllabus.overview).toBe("一行目の合成説明。\n二行目の合成説明。");
+    expect(syllabus.evaluation).toBe(
+      "割合 評価基準\n試験: 60％ 合成された期末試験。\nその他: 40％ 合成された小テスト。",
+    );
+    expect(syllabus.exam).toBe("60％ 合成された期末試験。");
+    // A value holding a nested table is read once, not repeated per cell.
+    expect(syllabus.plan).toBe("1: 合成回題目\n合成回の内容。");
+  });
+
   it("extracts detail keys from the official JavaScript result links", async () => {
     const urls = parseSyllabusSearch(
       await fixtureSnapshot(
