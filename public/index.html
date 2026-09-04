@@ -216,6 +216,7 @@
       }
       dd {
         margin: 0;
+        overflow-wrap: anywhere;
       }
       .tags {
         display: flex;
@@ -455,18 +456,20 @@
           addRow(dl, "授業方式", DELIVERY[s.deliveryMode] || s.deliveryMode);
           addRow(dl, "配当年次", s.allocatedYear);
           addRow(dl, "科目コード", s.publicCourseCode || s.classCode);
+          addRow(dl, "成績評価", s.evaluation);
+          addRow(dl, "試験", s.exam);
           addRow(dl, "対象者", s.eligibleAffiliations);
           addRow(dl, "前提条件", s.prerequisites);
           if (dl.childNodes.length > 0) card.appendChild(dl);
 
-          if (s.overview || s.plan || s.evaluation || s.exam) {
+          // 成績評価 and 試験 are shown above; the collapsed section keeps
+          // the long-form fields a student only reads occasionally.
+          if (s.overview || s.plan) {
             var details = el("details");
             details.appendChild(el("summary", null, "詳細を開く"));
             var body = el("div");
             detailSection(body, "概要", s.overview);
             detailSection(body, "授業計画", s.plan);
-            detailSection(body, "成績評価", s.evaluation);
-            detailSection(body, "試験", s.exam);
             details.appendChild(body);
             card.appendChild(details);
           }

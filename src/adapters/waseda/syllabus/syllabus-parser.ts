@@ -111,9 +111,11 @@ export function parseSyllabus(snapshot: PageSnapshot): Syllabus {
   const term = extractTerm(
     values.get("学期") ?? values.get("Term") ?? scheduleRaw,
   );
+  // 授業方法区分 carries the delivery mode. 授業形態 is a different field
+  // (講義, 演習, 実験) that never names one, and matching it first made every
+  // page with both resolve to "unknown".
   const modeRaw =
-    getValue(values, ["授業方式", "授業形態", "授業方法区分", "Course Mode"]) ??
-    "";
+    getValue(values, ["授業方法区分", "授業方式", "Course Mode"]) ?? "";
   const updatedRaw = getValue(values, [
     "最終更新日時",
     "最終更新日",
