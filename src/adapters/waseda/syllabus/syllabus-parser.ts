@@ -38,7 +38,8 @@ function parseSchedules(
   const schedules: Syllabus["schedules"] = [];
   const pattern =
     /([日月火水木金土])(?:曜(?:日)?)?\s*[・,/\s]?\s*(\d+(?:[-～]\d+)?)\s*(?:時限|限)/g;
-  for (const match of raw.matchAll(pattern)) {
+  // Live pages write periods with full-width digits ("水５時限").
+  for (const match of raw.normalize("NFKC").matchAll(pattern)) {
     const label = match[1];
     const period = match[2];
     if (label === undefined || period === undefined) continue;
@@ -51,6 +52,16 @@ function parseSchedules(
     });
   }
   return schedules;
+}
+
+/** Returns the term token from a value that may also carry a day and period. */
+function extractTerm(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  const token = raw
+    .split(/\s+/)
+    .find((part) => /学期|クォーター|通年|集中/.test(part));
+  if (token !== undefined) return token;
+  return /時限|限/.test(raw) ? undefined : raw;
 }
 
 function deliveryMode(value: string): Syllabus["deliveryMode"] {
@@ -68,9 +79,12 @@ export function parseSyllabus(snapshot: PageSnapshot): Syllabus {
     getValue(values, ["科目名", "Course Title"]) ??
     cleanText($("h1").first().text());
   const yearRaw = getValue(values, ["年度", "Academic Year"]);
+  // `syllabusByKey` re-requests `JAA104.php?pKey=<key>`, so the request key has
+  // to be the URL parameter. The page's own 科目キー field is a shorter internal
+  // identifier that cannot be fetched again.
   const key =
-    getValue(values, ["科目キー", "シラバスキー"]) ??
     new URL(snapshot.url).searchParams.get("pKey") ??
+    getValue(values, ["科目キー", "シラバスキー"]) ??
     $("[data-syllabus-key]").first().attr("data-syllabus-key");
   if (courseName === "" || yearRaw === undefined || key === undefined) {
     throw new PortalError(
@@ -93,6 +107,10 @@ export function parseSyllabus(snapshot: PageSnapshot): Syllabus {
     "曜日時限",
     "Day/Period",
   ]);
+  // 学期曜日時限 is one field, so the term has to be split back out of it.
+  const term = extractTerm(
+    values.get("学期") ?? values.get("Term") ?? scheduleRaw,
+  );
   const modeRaw =
     getValue(values, ["授業方式", "授業形態", "授業方法区分", "Course Mode"]) ??
     "";
@@ -135,12 +153,17 @@ export function parseSyllabus(snapshot: PageSnapshot): Syllabus {
     ...(getValue(values, ["クラスコード", "Class Code"]) === undefined
       ? {}
       : { classCode: getValue(values, ["クラスコード", "Class Code"]) }),
-    ...(getValue(values, ["公開コースコード", "科目コード", "Course Code"]) ===
-    undefined
+    ...(getValue(values, [
+      "公開コースコード",
+      "コース・コード",
+      "科目コード",
+      "Course Code",
+    ]) === undefined
       ? {}
       : {
           publicCourseCode: getValue(values, [
             "公開コースコード",
+            "コース・コード",
             "科目コード",
             "Course Code",
           ]),
@@ -152,9 +175,7 @@ export function parseSyllabus(snapshot: PageSnapshot): Syllabus {
       .split(/[、,／/]/)
       .map(cleanText)
       .filter(Boolean),
-    ...(getValue(values, ["学期", "Term"]) === undefined
-      ? {}
-      : { term: getValue(values, ["学期", "Term"]) }),
+    ...(term === undefined ? {} : { term }),
     ...(allocatedYear === undefined ? {} : { allocatedYear }),
     ...(eligibleAffiliations === undefined ? {} : { eligibleAffiliations }),
     ...(prerequisites === undefined ? {} : { prerequisites }),

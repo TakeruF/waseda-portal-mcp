@@ -83,6 +83,37 @@ describe("Waseda source parsers", () => {
     });
   });
 
+  it("reads rows that carry several label and value pairs", async () => {
+    const syllabus = parseSyllabus(
+      await fixtureSnapshot(
+        "syllabus-multipair.html",
+        "https://www.wsl.waseda.jp/syllabus/JAA104.php?pKey=SYNTH-MULTI-1&pLng=jp",
+      ),
+    );
+    expect(syllabus).toMatchObject({
+      // The fetchable pKey wins over the page's shorter internal 科目キー.
+      key: "SYNTH-MULTI-1",
+      year: 2026,
+      courseName: "合成科目名 ０１",
+      school: "合成学部",
+      classCode: "01",
+      publicCourseCode: "SYNX101L",
+      allocatedYear: "２年以上",
+      term: "春学期",
+      deliveryMode: "in_person",
+    });
+    expect(syllabus.instructors).toEqual(["例 太郎"]);
+    expect(syllabus.schedules).toEqual([
+      {
+        weekday: 3,
+        weekdayLabel: "水曜日",
+        period: "5",
+        room: "１-２０３",
+        campus: "合成キャンパス",
+      },
+    ]);
+  });
+
   it("extracts detail keys from the official JavaScript result links", async () => {
     const urls = parseSyllabusSearch(
       await fixtureSnapshot(
