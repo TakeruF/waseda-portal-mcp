@@ -2,6 +2,7 @@
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 
 import { WasedaAdapter } from "./adapters/waseda/waseda-adapter.js";
+import { FetchPageReader } from "./adapters/waseda/fetch-page-reader.js";
 import { LocalSyllabusMappingCache } from "./adapters/waseda/matching/syllabus-mapping-cache.js";
 import { LiveWasedaSources } from "./adapters/waseda/sources.js";
 import { runAuth } from "./auth/auth-command.js";
@@ -9,15 +10,36 @@ import { BrowserSession } from "./auth/browser-session.js";
 import { loadConfig, type AppConfig } from "./config/config.js";
 import { loadAcademicProfile } from "./config/academic-profile.js";
 import { TtlCache } from "./core/cache/ttl-cache.js";
+import type { SyllabusPageReader } from "./core/sources/page-access.js";
 import { startHttpServer } from "./http/http-server.js";
-import { createMcpServer } from "./server.js";
+import { createMcpServer } from "./mcp-server.js";
+
+interface SourceReader {
+  reader: SyllabusPageReader;
+  close: () => Promise<void>;
+}
+
+/**
+ * The public catalog is plain HTTP, so a public deployment needs no browser at
+ * all. Only the authenticated portals require Playwright.
+ */
+function createSourceReader(config: AppConfig): SourceReader {
+  if (config.publicOnly) {
+    return {
+      reader: new FetchPageReader({ timeoutMs: config.navigationTimeoutMs }),
+      close: () => Promise.resolve(),
+    };
+  }
+  const browser = new BrowserSession(config);
+  return { reader: browser, close: () => browser.close() };
+}
 
 async function buildAdapter(
   config: AppConfig,
-  browser: BrowserSession,
+  reader: SyllabusPageReader,
 ): Promise<WasedaAdapter> {
   const cache = new TtlCache(config.cacheEnabled, config.cacheTtlMs);
-  const sources = new LiveWasedaSources(browser, cache, {
+  const sources = new LiveWasedaSources(reader, cache, {
     minAccessIntervalMs: config.minAccessIntervalMs,
     ...(config.maxCourses === undefined
       ? {}
@@ -53,9 +75,11 @@ async function main(): Promise<void> {
   if (command !== undefined && command !== "serve-http")
     throw new Error(`Unknown command: ${command}`);
 
-  const browser = new BrowserSession(config);
-  const adapter = await buildAdapter(config, browser);
-  const mode = config.publicOnly ? "public catalog only" : "authenticated";
+  const source = createSourceReader(config);
+  const adapter = await buildAdapter(config, source.reader);
+  const mode = config.publicOnly
+    ? "public catalog only, no browser"
+    : "authenticated";
 
   if (command === "serve-http") {
     const http = await startHttpServer({
@@ -80,7 +104,7 @@ async function main(): Promise<void> {
         .close()
         .catch(() => undefined)
         .finally(() => {
-          void browser.close().finally(() => process.exit(0));
+          void source.close().finally(() => process.exit(0));
         });
     };
     process.once("SIGINT", shutdown);
@@ -94,7 +118,7 @@ async function main(): Promise<void> {
   console.error(`waseda-portal-mcp is listening on stdio (read-only, ${mode})`);
 
   const close = () => {
-    void browser.close().finally(() => process.exit(0));
+    void source.close().finally(() => process.exit(0));
   };
   process.once("SIGINT", close);
   process.once("SIGTERM", close);

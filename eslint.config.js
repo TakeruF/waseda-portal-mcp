@@ -3,7 +3,15 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "coverage/**", "node_modules/**", "eslint.config.js"],
+    // server.mjs is a three-line deployment shim over the build output; the
+    // code it calls is typechecked and linted in src/http/public-server.ts.
+    ignores: [
+      "dist/**",
+      "coverage/**",
+      "node_modules/**",
+      "eslint.config.js",
+      "server.mjs",
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

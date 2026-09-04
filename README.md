@@ -17,7 +17,7 @@
 
 - Node.js 22以上
 - npm
-- システムにインストールされたGoogle Chrome
+- システムにインストールされたGoogle Chrome（認証ありモードのみ。`--public-only`では不要）
 
 ```bash
 git clone https://github.com/TakeruF/waseda-portal-mcp.git
@@ -50,12 +50,14 @@ npm run auth
 
 ## 公開カタログの共有配備
 
-`--public-only`（または`WASEDA_PORTAL_PUBLIC_ONLY=true`）は、公開Webシラバスと公開学事日程だけを読む共有可能なモードです。認証セッションを持たず、個人情報を扱いません。
+`--public-only`（または`WASEDA_PORTAL_PUBLIC_ONLY=true`）は、公開Webシラバスと公開学事日程だけを読む共有可能なモードです。認証セッションを持たず、個人情報を扱わず、**ブラウザも起動しません**。
 
 ```bash
 npm run build
 npm run serve:public   # http://127.0.0.1:8787
 ```
+
+公開Webシラバスは素のHTTPで完結します。詳細ページは通常の`GET`、検索は`ControllerParameters=JAA103SubCon`を含むフォーム`POST`で、Cookieも事前のGETも不要です。このため公開モードは`FetchPageReader`を使い、Playwrightを必要としません。科目名検索は約0.6秒で完了します。
 
 このモードでは`ReadOnlyGuard`が`www.wsl.waseda.jp`と`www.waseda.jp`へのhttpsリクエストだけを通し、それ以外は送信前に`HOST_NOT_ALLOWED`で遮断します。Moodle、MyWaseda、class.waseda.jp、SSOにはプロセスから到達できません。`auth-state.json`、学修プロフィール、`courseId → syllabusKey`対応表も読み込まず、MCPツールは`search_syllabi`と`get_syllabus`（`syllabusKey`のみ）の2つだけになります。
 
@@ -67,7 +69,9 @@ npm run serve:public   # http://127.0.0.1:8787
 
 既定のレート制限はクライアントごとに`/api`が毎分20回、`/mcp`がその5倍、共有ブラウザの同時使用は4です。上流の早稲田側アクセスはプロセス全体で1本に直列化されます。
 
-認証ありモードは本人のSSOセッションを保持します。他人が到達できる場所では動かさないでください。Dockerでの配備、HTTPS、環境変数、MCPクライアント登録手順は[docs/deployment.md](docs/deployment.md)にあります。
+プロジェクト直下の`server.mjs`は、Vercelなど`server`エントリポイントを検出するホスト向けの入口です。`node server.mjs`でローカルでも同じものを起動できます。
+
+認証ありモードは本人のSSOセッションを保持します。他人が到達できる場所では動かさないでください。Vercelとコンテナへの配備、環境変数、サーバーレスでの注意点、MCPクライアント登録手順は[docs/deployment.md](docs/deployment.md)にあります。
 
 ## ツール
 
@@ -146,7 +150,8 @@ npm run format:check
 npm run build
 npm run test:live:auth-state     # 新規一時プロファイルでAUTH_REQUIREDを確認
 npm run test:live:authenticated  # 認証必須。AUTH_REQUIRED/SESSION_EXPIREDは失敗
-npm run test:live:catalog        # 公開シラバスの内容検索と科目名検索
+npm run test:live:catalog        # 公開シラバスの内容検索と科目名検索（ブラウザ経由）
+npm run test:live:public         # 公開カタログをブラウザなしで検証。配備される経路そのもの
 npm run test:e2e:authenticated   # ビルド後、MCPクライアントからstdio E2E
 npm run test:e2e:catalog         # search_syllabiのstdio E2E
 ```

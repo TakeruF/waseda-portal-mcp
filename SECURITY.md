@@ -10,11 +10,11 @@ The authentication command is separate. It opens a dedicated Chrome profile and 
 
 ## Public catalog deployment
 
-`--public-only` (or `WASEDA_PORTAL_PUBLIC_ONLY=true`) is the only supported shared deployment. In that mode `ReadOnlyGuard` carries a host allowlist and rejects, before send, every request that is not an https request to `www.wsl.waseda.jp` or `www.waseda.jp`. Moodle, MyWaseda, `class.waseda.jp`, and the SSO identity provider are unreachable from the process. The stored Playwright storage state is not restored, a separate profile directory is used, and neither the academic profile nor the `courseId → syllabusKey` mapping cache is loaded. Only `search_syllabi` and `get_syllabus` (by `syllabusKey`) are registered as tools.
+`--public-only` (or `WASEDA_PORTAL_PUBLIC_ONLY=true`) is the only supported shared deployment. In that mode `ReadOnlyGuard` carries a host allowlist and rejects, before send, every request that is not an https request to `www.wsl.waseda.jp` or `www.waseda.jp`. Moodle, MyWaseda, `class.waseda.jp`, and the SSO identity provider are unreachable from the process. Reads go through `FetchPageReader`, which uses plain HTTP and starts no browser, holds no cookie jar, and restores no storage state. Neither the academic profile nor the `courseId → syllabusKey` mapping cache is loaded, and only `search_syllabi` and `get_syllabus` (by `syllabusKey`) are registered as tools.
 
 The authenticated mode must never be exposed to other people. It holds the owner's SSO session, so anyone who can reach its stdio pipe or HTTP port can read that person's enrollment, deadlines, and cancellation notices. There is no supported way to move an authenticated session into a shared or cloud deployment: do not upload `auth-state.json` to a server and do not enter Waseda credentials anywhere other than Waseda's own login pages in your own browser.
 
-A shared deployment reaches Waseda from one address on behalf of every caller. Upstream reads are serialized process-wide with a minimum interval, and per-client token buckets plus a concurrency cap bound the HTTP surface. Operators remain responsible for the resulting access volume and for Waseda's terms of use.
+A shared deployment reaches Waseda from few addresses on behalf of every caller. Upstream reads are serialized process-wide with a minimum interval, and per-client token buckets plus a concurrency cap bound the HTTP surface. Those limits and the normalized cache are per-process, so a serverless host that runs several instances weakens all of them; raise `WASEDA_PORTAL_MIN_ACCESS_INTERVAL_MS`, move the buckets to a shared store, or run a single long-lived process. Operators remain responsible for the resulting access volume and for Waseda's terms of use.
 
 ## Local data
 

@@ -6,8 +6,8 @@
   "bin": {
     "waseda-portal-mcp": "dist/cli.js"
   },
-  "main": "dist/server.js",
-  "exports": "./dist/server.js",
+  "main": "./dist/mcp-server.js",
+  "exports": "./dist/mcp-server.js",
   "files": [
     "dist",
     "public",
@@ -33,6 +33,7 @@
     "test:live:auth-state": "vitest run tests/live/auth-state.live.test.ts --no-file-parallelism --maxWorkers=1",
     "test:live:authenticated": "vitest run tests/live/authenticated.live.test.ts --no-file-parallelism --maxWorkers=1",
     "test:live:catalog": "vitest run tests/live/syllabus-catalog.live.test.ts --no-file-parallelism --maxWorkers=1",
+    "test:live:public": "vitest run tests/live/public-catalog.live.test.ts --no-file-parallelism --maxWorkers=1",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
