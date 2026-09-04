@@ -10,3 +10,5 @@ test-results/
 .DS_Store
 .vercel/
 /academic-profile.json
+.vercel
+.env*

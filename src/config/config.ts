@@ -4,6 +4,7 @@ import path from "node:path";
 export interface AppConfig {
   timezone: "Asia/Tokyo";
   publicOnly: boolean;
+  /** Interface to bind. An empty string binds every interface, IPv6 included. */
   httpHost: string;
   httpPort: number;
   httpAllowedHosts: string[];
