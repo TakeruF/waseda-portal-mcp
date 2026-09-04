@@ -74,6 +74,65 @@
         color: var(--muted);
         margin: 16px 0 22px;
       }
+      .personal-dashboard {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin: 0 0 18px;
+        padding: 14px;
+      }
+      .personal-dashboard[hidden] {
+        display: none;
+      }
+      .personal-dashboard h2 {
+        font-size: 15px;
+        margin: 0 0 2px;
+      }
+      .dashboard-grid {
+        display: grid;
+        gap: 9px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 10px;
+      }
+      .dashboard-card {
+        background: var(--surface-2);
+        border-radius: 8px;
+        padding: 9px;
+      }
+      .dashboard-card h3 {
+        color: var(--muted);
+        font-size: 11.5px;
+        margin: 0 0 3px;
+      }
+      .dashboard-card strong {
+        color: var(--accent);
+        font-size: 17px;
+      }
+      .dashboard-list {
+        font-size: 12px;
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+      .personal-dashboard button {
+        background: var(--accent);
+        border: 0;
+        border-radius: 7px;
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+        margin-top: 8px;
+        padding: 7px 10px;
+      }
+      .personal-dashboard button:disabled {
+        cursor: progress;
+        opacity: 0.6;
+      }
+      @media (max-width: 480px) {
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+      }
       form {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -147,6 +206,66 @@
       }
       .row > * {
         flex: 1 1 200px;
+      }
+      .quick-filters,
+      .filter-grid,
+      .summary-badges,
+      .compare-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+      .quick-filters {
+        margin: 2px 0 14px;
+      }
+      button.chip,
+      .summary-badge {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font: inherit;
+        font-size: 12px;
+        padding: 5px 9px;
+      }
+      button.chip {
+        background: var(--surface-2);
+        color: var(--text);
+        cursor: pointer;
+      }
+      button.chip[aria-pressed="true"] {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .filter-panel {
+        border-top: 1px solid var(--border);
+        margin: 6px 0 14px;
+        padding-top: 10px;
+      }
+      .filter-panel summary {
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 10px;
+      }
+      .filter-grid label {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      select {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font: inherit;
+        font-size: 14px;
+        margin-top: 3px;
+        padding: 8px;
+        width: 100%;
       }
       .hint {
         font-size: 12px;
@@ -234,6 +353,31 @@
         color: var(--accent);
         border: 1px solid var(--border);
       }
+      .summary-badges {
+        margin: 10px 0;
+      }
+      .summary-badge {
+        background: var(--surface-2);
+        color: var(--muted);
+      }
+      .summary-badge.positive {
+        background: #e8f4eb;
+        color: #1f6b3b;
+      }
+      .summary-badge.attention {
+        background: var(--warn-bg);
+        color: #7b5514;
+      }
+      @media (prefers-color-scheme: dark) {
+        .summary-badge.positive {
+          background: #193629;
+          color: #9ed6ad;
+        }
+        .summary-badge.attention {
+          background: var(--warn-bg);
+          color: #eacb83;
+        }
+      }
       .grading {
         border-top: 1px solid var(--border);
         margin: 4px 0 12px;
@@ -293,6 +437,95 @@
         color: var(--muted);
         margin: 12px 0 2px;
       }
+      .class-group > summary {
+        color: var(--accent);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .class-option {
+        border-top: 1px solid var(--border);
+        margin-top: 10px;
+        padding-top: 10px;
+      }
+      .class-option h3 {
+        font-size: 14px;
+        margin: 0 0 2px;
+      }
+      .compare-toggle {
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        color: var(--accent);
+        cursor: pointer;
+        font: inherit;
+        font-size: 12px;
+        padding: 5px 8px;
+      }
+      .compare-toggle[aria-pressed="true"] {
+        background: var(--accent);
+        color: #fff;
+      }
+      #compare-tray {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        bottom: 12px;
+        box-shadow: 0 8px 24px rgb(0 0 0 / 15%);
+        display: flex;
+        justify-content: space-between;
+        left: 12px;
+        padding: 10px 12px;
+        position: fixed;
+        right: 12px;
+        z-index: 2;
+      }
+      #compare-tray[hidden] {
+        display: none;
+      }
+      #compare-tray p {
+        font-size: 13px;
+        margin: 0;
+      }
+      #compare-tray button,
+      dialog button {
+        background: var(--accent);
+        border: 0;
+        border-radius: 7px;
+        color: #fff;
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+        padding: 6px 9px;
+      }
+      dialog {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text);
+        max-width: min(720px, calc(100vw - 24px));
+        padding: 18px;
+      }
+      dialog::backdrop {
+        background: rgb(0 0 0 / 45%);
+      }
+      .compare-table {
+        border-collapse: collapse;
+        font-size: 12px;
+        margin: 12px 0;
+        overflow-wrap: anywhere;
+        width: 100%;
+      }
+      .compare-table th,
+      .compare-table td {
+        border: 1px solid var(--border);
+        padding: 7px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .compare-table th {
+        color: var(--muted);
+      }
       a {
         color: var(--accent);
       }
@@ -317,6 +550,17 @@
       <p class="notice">
         読み取るのは<strong>公開されているシラバスのみ</strong>です。Moodleの履修情報、MyWasedaの休講情報、課題や締切、成績、個人情報は一切扱いません。ログインも不要です。表示内容は参考情報であり、履修可否・登録期間・定員・教室は必ず公式情報でご確認ください。
       </p>
+
+      <section class="personal-dashboard" id="personal-dashboard" hidden>
+        <h2>本人専用の履修情報</h2>
+        <p class="hint" id="personal-status">
+          MoodleとMyWasedaの接続状態を確認しています…
+        </p>
+        <button type="button" id="personal-connect" hidden>
+          Moodle・MyWasedaに接続する
+        </button>
+        <div id="personal-content"></div>
+      </section>
 
       <form id="search-form">
         <fieldset>
@@ -365,6 +609,144 @@
           </p>
         </fieldset>
 
+        <div class="quick-filters" aria-label="評価条件のクイック検索">
+          <button
+            class="chip"
+            type="button"
+            data-preset="no-exam"
+            aria-pressed="false"
+          >
+            試験なし（明記）
+          </button>
+          <button
+            class="chip"
+            type="button"
+            data-preset="report-heavy"
+            aria-pressed="false"
+          >
+            レポート中心
+          </button>
+          <button
+            class="chip"
+            type="button"
+            data-preset="attendance"
+            aria-pressed="false"
+          >
+            出席・平常点あり
+          </button>
+          <button
+            class="chip"
+            type="button"
+            data-preset="no-prerequisite"
+            aria-pressed="false"
+          >
+            前提条件の記載なし
+          </button>
+        </div>
+
+        <details class="filter-panel" id="filter-panel">
+          <summary>曜日・評価方法などで絞り込む</summary>
+          <p class="hint">
+            自分の条件（任意・このページでは保存しません）。開講学部ではなく、公式シラバスの「対象学生」と「配当年次」の記載だけを照合します。
+          </p>
+          <div class="filter-grid">
+            <label
+              >所属学部・研究科
+              <input
+                type="text"
+                id="profile-affiliation"
+                maxlength="80"
+                placeholder="例: 政治経済学部"
+                autocomplete="off"
+              />
+            </label>
+            <label
+              >現在の学年
+              <select id="profile-year">
+                <option value="">指定なし</option>
+                <option value="1">1年</option>
+                <option value="2">2年</option>
+                <option value="3">3年</option>
+                <option value="4">4年</option>
+                <option value="5">5年</option>
+                <option value="6">6年以上</option>
+                <option value="other">大学院・その他</option>
+              </select>
+            </label>
+            <label
+              >自分の条件の使い方
+              <select id="profile-mode">
+                <option value="priority">合う可能性が高い科目を優先</option>
+                <option value="hide-conflicts">明記された対象外を隠す</option>
+                <option value="off">使わない</option>
+              </select>
+            </label>
+            <label
+              >曜日
+              <select id="filter-weekday">
+                <option value="">指定なし</option>
+                <option value="1">月曜</option>
+                <option value="2">火曜</option>
+                <option value="3">水曜</option>
+                <option value="4">木曜</option>
+                <option value="5">金曜</option>
+                <option value="6">土曜</option>
+              </select>
+            </label>
+            <label
+              >時限
+              <select id="filter-period">
+                <option value="">指定なし</option>
+                <option value="1">1限</option>
+                <option value="2">2限</option>
+                <option value="3">3限</option>
+                <option value="4">4限</option>
+                <option value="5">5限</option>
+                <option value="6">6限</option>
+              </select>
+            </label>
+            <label
+              >授業形式
+              <select id="filter-delivery">
+                <option value="">指定なし</option>
+                <option value="in_person">対面</option>
+                <option value="online">オンライン</option>
+                <option value="on_demand">オンデマンド</option>
+                <option value="hybrid">ハイブリッド</option>
+              </select>
+            </label>
+            <label
+              >評価方法
+              <select id="filter-grading">
+                <option value="">指定なし</option>
+                <option value="no-exam">試験なし（明記）</option>
+                <option value="report-heavy">レポート50％以上</option>
+                <option value="attendance">出席・平常点あり</option>
+              </select>
+            </label>
+            <label
+              >前提条件
+              <select id="filter-prerequisite">
+                <option value="">指定なし</option>
+                <option value="none">前提条件の記載なし</option>
+                <option value="has">前提条件の記載あり</option>
+              </select>
+            </label>
+            <label
+              >並び順
+              <select id="sort-by">
+                <option value="relevance">関連度順</option>
+                <option value="report">レポート比率が高い順</option>
+                <option value="exam">試験比率が低い順</option>
+                <option value="prerequisite">前提条件の記載なしを優先</option>
+              </select>
+            </label>
+          </div>
+          <p class="hint">
+            評価・前提条件は公式シラバスの記載を機械的に整理したものです。履修可否は公式情報で確認してください。
+          </p>
+        </details>
+
         <fieldset>
           <div class="row">
             <div>
@@ -375,7 +757,7 @@
                 name="max"
                 min="1"
                 max="5"
-                value="3"
+                value="5"
               />
             </div>
           </div>
@@ -386,6 +768,15 @@
 
       <p id="status" role="status" aria-live="polite"></p>
       <div id="results"></div>
+      <div id="compare-tray" hidden>
+        <p id="compare-count"></p>
+        <button type="button" id="open-compare">比較する</button>
+      </div>
+      <dialog id="compare-dialog">
+        <h2>科目を比較</h2>
+        <div id="compare-content"></div>
+        <button type="button" id="close-compare">閉じる</button>
+      </dialog>
 
       <footer>
         非公式・read-only。出典は各カードのリンク先（公式Webシラバス）を確認してください。
@@ -416,6 +807,27 @@
         var results = document.getElementById("results");
         var submit = document.getElementById("submit");
         var relatedWrap = document.getElementById("related-wrap");
+        var filterControls = {
+          affiliation: document.getElementById("profile-affiliation"),
+          year: document.getElementById("profile-year"),
+          profileMode: document.getElementById("profile-mode"),
+          weekday: document.getElementById("filter-weekday"),
+          period: document.getElementById("filter-period"),
+          delivery: document.getElementById("filter-delivery"),
+          grading: document.getElementById("filter-grading"),
+          prerequisite: document.getElementById("filter-prerequisite"),
+          sort: document.getElementById("sort-by"),
+        };
+        var allHits = [];
+        var comparison = {};
+        var compareTray = document.getElementById("compare-tray");
+        var compareCount = document.getElementById("compare-count");
+        var compareDialog = document.getElementById("compare-dialog");
+        var compareContent = document.getElementById("compare-content");
+        var personalDashboard = document.getElementById("personal-dashboard");
+        var personalStatus = document.getElementById("personal-status");
+        var personalContent = document.getElementById("personal-content");
+        var personalConnect = document.getElementById("personal-connect");
 
         function selectedMode() {
           return form.querySelector('input[name="mode"]:checked').value;
@@ -432,6 +844,45 @@
           },
         );
         syncMode();
+
+        Array.prototype.forEach.call(
+          document.querySelectorAll("[data-preset]"),
+          function (button) {
+            button.addEventListener("click", function () {
+              var preset = button.getAttribute("data-preset");
+              var active = button.getAttribute("aria-pressed") !== "true";
+              Array.prototype.forEach.call(
+                document.querySelectorAll("[data-preset]"),
+                function (other) {
+                  other.setAttribute("aria-pressed", "false");
+                },
+              );
+              filterControls.grading.value = "";
+              filterControls.prerequisite.value = "";
+              if (active) {
+                button.setAttribute("aria-pressed", "true");
+                if (preset === "no-prerequisite")
+                  filterControls.prerequisite.value = "none";
+                else filterControls.grading.value = preset;
+              }
+              renderResults();
+            });
+          },
+        );
+        Object.keys(filterControls).forEach(function (key) {
+          filterControls[key].addEventListener("change", function () {
+            Array.prototype.forEach.call(
+              document.querySelectorAll("[data-preset]"),
+              function (button) {
+                button.setAttribute("aria-pressed", "false");
+              },
+            );
+            renderResults();
+          });
+          filterControls[key].addEventListener("input", function () {
+            renderResults();
+          });
+        });
 
         function el(tag, className, text) {
           var node = document.createElement(tag);
@@ -507,6 +958,212 @@
           });
         }
 
+        function percentValue(weight) {
+          return Number(
+            String(weight || "")
+              .normalize("NFKC")
+              .replace("%", ""),
+          );
+        }
+
+        function gradingSummary(syllabus) {
+          var items = gradingItems(syllabus.evaluation);
+          var summary = { items: items, exam: 0, report: 0, attendance: 0 };
+          items.forEach(function (item) {
+            var value = percentValue(item.weight);
+            if (/試験|テスト/.test(item.label)) summary.exam += value;
+            if (/レポート|課題|論文/.test(item.label)) summary.report += value;
+            if (/出席|平常点|参加/.test(item.label))
+              summary.attendance += value;
+          });
+          var source = [syllabus.evaluation, syllabus.exam]
+            .filter(Boolean)
+            .join(" ");
+          summary.noExamConfirmed =
+            /(?:定期|筆記)?試験\s*(?:は)?\s*(?:なし|行わない|実施しない)|テスト\s*(?:は)?\s*(?:なし|行わない|実施しない)/.test(
+              source,
+            ) ||
+            items.some(function (item) {
+              return (
+                /試験|テスト/.test(item.label) &&
+                percentValue(item.weight) === 0
+              );
+            });
+          return summary;
+        }
+
+        function prerequisiteState(syllabus) {
+          var text = [syllabus.prerequisites]
+            .concat(syllabus.eligibilityNotes || [])
+            .filter(Boolean)
+            .join(" ");
+          return text ? "has" : "none";
+        }
+
+        function normalizeProfileText(value) {
+          return String(value || "")
+            .normalize("NFKC")
+            .replace(/[\s　]/g, "")
+            .replace(/学生|生$/g, "")
+            .trim();
+        }
+
+        function affiliationMatch(syllabus) {
+          var selected = normalizeProfileText(filterControls.affiliation.value);
+          if (!selected) return "unused";
+          var target = normalizeProfileText(syllabus.eligibleAffiliations);
+          if (!target) return "unknown";
+          if (/全(?:学部|研究科|学生|学年)|全員|全学/.test(target))
+            return "compatible";
+          if (target.includes(selected) || selected.includes(target))
+            return "compatible";
+          // A free-text target field may be too vague to prove exclusion.
+          return /学部|研究科|学生/.test(target) ? "conflict" : "unknown";
+        }
+
+        function yearMatch(syllabus) {
+          var selected = filterControls.year.value;
+          if (!selected) return "unused";
+          if (selected === "other") return "unknown";
+          var year = Number(selected);
+          var allocated = String(syllabus.allocatedYear || "").normalize(
+            "NFKC",
+          );
+          if (!allocated) return "unknown";
+          if (/全学年|全員|全学生/.test(allocated)) return "compatible";
+          var above = allocated.match(/(\d+)\s*年(?:次|生)?以上/);
+          if (above)
+            return year >= Number(above[1]) ? "compatible" : "conflict";
+          var range = allocated.match(/(\d+)\s*[〜~\-]\s*(\d+)\s*年/);
+          if (range)
+            return year >= Number(range[1]) && year <= Number(range[2])
+              ? "compatible"
+              : "conflict";
+          var exact = allocated.match(/(\d+)\s*年(?:次|生)?/);
+          if (exact)
+            return year === Number(exact[1]) ? "compatible" : "conflict";
+          return "unknown";
+        }
+
+        function profileMatch(syllabus) {
+          var affiliation = affiliationMatch(syllabus);
+          var year = yearMatch(syllabus);
+          var active = affiliation !== "unused" || year !== "unused";
+          if (!active)
+            return { status: "unused", affiliation: affiliation, year: year };
+          if (affiliation === "conflict" || year === "conflict")
+            return { status: "conflict", affiliation: affiliation, year: year };
+          if (affiliation === "unknown" || year === "unknown")
+            return { status: "review", affiliation: affiliation, year: year };
+          return { status: "compatible", affiliation: affiliation, year: year };
+        }
+
+        function hasSchedule(syllabus, weekday, period) {
+          if (!weekday && !period) return true;
+          return (syllabus.schedules || []).some(function (schedule) {
+            if (weekday && String(schedule.weekday) !== weekday) return false;
+            if (!period) return true;
+            return new RegExp("^" + period + "(?:[-～]|$)").test(
+              schedule.period,
+            );
+          });
+        }
+
+        function matchesFilters(hit) {
+          var syllabus = hit.syllabus;
+          var grading = gradingSummary(syllabus);
+          var filter = filterControls;
+          if (
+            filter.profileMode.value === "hide-conflicts" &&
+            profileMatch(syllabus).status === "conflict"
+          )
+            return false;
+          if (!hasSchedule(syllabus, filter.weekday.value, filter.period.value))
+            return false;
+          if (
+            filter.delivery.value &&
+            syllabus.deliveryMode !== filter.delivery.value
+          )
+            return false;
+          if (filter.grading.value === "no-exam" && !grading.noExamConfirmed)
+            return false;
+          if (filter.grading.value === "report-heavy" && grading.report < 50)
+            return false;
+          if (filter.grading.value === "attendance" && grading.attendance === 0)
+            return false;
+          if (
+            filter.prerequisite.value &&
+            prerequisiteState(syllabus) !== filter.prerequisite.value
+          )
+            return false;
+          return true;
+        }
+
+        function normalizedCourseName(name) {
+          return String(name || "")
+            .normalize("NFKC")
+            .replace(/\s*\d{1,3}$/, "")
+            .replace(/\s+/g, " ")
+            .trim();
+        }
+
+        function groupedHits(hits) {
+          var grouped = {};
+          hits.forEach(function (hit) {
+            var syllabus = hit.syllabus;
+            var key = [
+              normalizedCourseName(syllabus.courseName),
+              syllabus.school || "",
+              syllabus.publicCourseCode || "",
+            ].join("\u0000");
+            (grouped[key] || (grouped[key] = [])).push(hit);
+          });
+          return Object.keys(grouped).map(function (key) {
+            return grouped[key];
+          });
+        }
+
+        function updateComparison() {
+          var count = Object.keys(comparison).length;
+          compareTray.hidden = count === 0;
+          compareCount.textContent = count + "科目を比較中（最大3科目）";
+        }
+
+        function summaryBadges(syllabus) {
+          var grading = gradingSummary(syllabus);
+          var profile = profileMatch(syllabus);
+          var badges = [];
+          if (grading.noExamConfirmed)
+            badges.push({ text: "試験なし（明記）", kind: "positive" });
+          else if (grading.exam > 0)
+            badges.push({ text: "試験 " + grading.exam + "%", kind: "" });
+          if (grading.report > 0)
+            badges.push({ text: "レポート " + grading.report + "%", kind: "" });
+          if (grading.attendance > 0)
+            badges.push({
+              text: "平常点 " + grading.attendance + "%",
+              kind: "",
+            });
+          badges.push({
+            text:
+              prerequisiteState(syllabus) === "has"
+                ? "前提条件の記載あり"
+                : "前提条件の記載なし",
+            kind:
+              prerequisiteState(syllabus) === "has" ? "attention" : "positive",
+          });
+          if (profile.status === "compatible")
+            badges.push({ text: "自分の条件に一致", kind: "positive" });
+          if (profile.status === "conflict")
+            badges.push({
+              text: "自分の条件と不一致の可能性",
+              kind: "attention",
+            });
+          if (profile.status === "review")
+            badges.push({ text: "自分の条件は要確認", kind: "" });
+          return badges;
+        }
+
         function scheduleText(schedules) {
           if (!schedules || schedules.length === 0) return "";
           return schedules
@@ -542,6 +1199,35 @@
                 .join(" ・ "),
             ),
           );
+
+          var badges = el("div", "summary-badges");
+          summaryBadges(s).forEach(function (badge) {
+            badges.appendChild(
+              el("span", "summary-badge " + badge.kind, badge.text),
+            );
+          });
+          card.appendChild(badges);
+
+          var compareButton = el("button", "compare-toggle", "比較に追加");
+          compareButton.type = "button";
+          compareButton.setAttribute(
+            "aria-pressed",
+            comparison[s.key] ? "true" : "false",
+          );
+          if (comparison[s.key]) compareButton.textContent = "比較から外す";
+          compareButton.addEventListener("click", function () {
+            if (comparison[s.key]) delete comparison[s.key];
+            else {
+              if (Object.keys(comparison).length >= 3) {
+                setStatus("比較できるのは3科目までです。", true);
+                return;
+              }
+              comparison[s.key] = hit;
+            }
+            updateComparison();
+            renderResults();
+          });
+          card.appendChild(compareButton);
 
           var tags = el("div", "tags");
           (hit.matchedTerms || []).forEach(function (term) {
@@ -599,6 +1285,310 @@
 
           return card;
         }
+
+        function sortHits(hits) {
+          var sort = filterControls.sort.value;
+          return hits.slice().sort(function (left, right) {
+            var a = gradingSummary(left.syllabus);
+            var b = gradingSummary(right.syllabus);
+            if (filterControls.profileMode.value === "priority") {
+              var profileOrder = {
+                compatible: 0,
+                review: 1,
+                conflict: 2,
+                unused: 0,
+              };
+              var profileDifference =
+                profileOrder[profileMatch(left.syllabus).status] -
+                profileOrder[profileMatch(right.syllabus).status];
+              if (profileDifference !== 0) return profileDifference;
+            }
+            if (sort === "report") return b.report - a.report;
+            if (sort === "exam") return a.exam - b.exam;
+            if (sort === "prerequisite")
+              return (
+                (prerequisiteState(left.syllabus) === "none" ? 0 : 1) -
+                (prerequisiteState(right.syllabus) === "none" ? 0 : 1)
+              );
+            return (right.relevanceScore || 0) - (left.relevanceScore || 0);
+          });
+        }
+
+        function renderGroup(group) {
+          if (group.length === 1) return renderHit(group[0]);
+          var first = group[0];
+          var card = el("article");
+          card.appendChild(
+            el("h2", null, normalizedCourseName(first.syllabus.courseName)),
+          );
+          card.appendChild(
+            el(
+              "p",
+              "sub",
+              (first.syllabus.school || "開講箇所の記載なし") +
+                " ・ " +
+                group.length +
+                "クラス",
+            ),
+          );
+          card.appendChild(
+            el("p", "hint", "教員・曜日時限ごとの違いは展開して確認できます。"),
+          );
+          var details = el("details", "class-group");
+          details.appendChild(
+            el("summary", null, group.length + "クラスを表示"),
+          );
+          group.forEach(function (hit) {
+            var syllabus = hit.syllabus;
+            var option = el("div", "class-option");
+            option.appendChild(
+              el(
+                "h3",
+                null,
+                scheduleText(syllabus.schedules) || syllabus.courseName,
+              ),
+            );
+            option.appendChild(
+              el("p", "sub", (syllabus.instructors || []).join("、")),
+            );
+            option.appendChild(renderHit(hit));
+            details.appendChild(option);
+          });
+          card.appendChild(details);
+          return card;
+        }
+
+        function renderResults() {
+          results.replaceChildren();
+          if (allHits.length === 0) return;
+          var filtered = sortHits(allHits.filter(matchesFilters));
+          var meta = el(
+            "p",
+            "meta",
+            filtered.length +
+              "件表示 / " +
+              allHits.length +
+              "件取得 ・ 条件は公式シラバスの記載ベース" +
+              (filterControls.profileMode.value === "hide-conflicts"
+                ? " ・ 明記された対象外を非表示"
+                : ""),
+          );
+          results.appendChild(meta);
+          if (filtered.length === 0) {
+            results.appendChild(
+              el(
+                "p",
+                "hint",
+                "条件に一致する科目は、取得した結果内では見つかりませんでした。条件をゆるめるか、検索語を変えてください。",
+              ),
+            );
+            return;
+          }
+          groupedHits(filtered).forEach(function (group) {
+            results.appendChild(renderGroup(group));
+          });
+        }
+
+        function gradingText(syllabus) {
+          var grading = gradingSummary(syllabus);
+          var bits = [];
+          if (grading.noExamConfirmed) bits.push("試験なし（明記）");
+          else if (grading.exam > 0) bits.push("試験 " + grading.exam + "%");
+          if (grading.report > 0) bits.push("レポート " + grading.report + "%");
+          if (grading.attendance > 0)
+            bits.push("平常点 " + grading.attendance + "%");
+          return bits.join(" / ") || "評価内訳を抽出できませんでした";
+        }
+
+        function showComparison() {
+          compareContent.replaceChildren();
+          var selected = Object.keys(comparison).map(function (key) {
+            return comparison[key];
+          });
+          var table = el("table", "compare-table");
+          var head = el("thead");
+          var headerRow = el("tr");
+          headerRow.appendChild(el("th", null, "項目"));
+          selected.forEach(function (hit) {
+            headerRow.appendChild(el("th", null, hit.syllabus.courseName));
+          });
+          head.appendChild(headerRow);
+          table.appendChild(head);
+          var body = el("tbody");
+          [
+            [
+              "曜日時限",
+              function (s) {
+                return scheduleText(s.schedules) || "記載なし";
+              },
+            ],
+            [
+              "授業形式",
+              function (s) {
+                return DELIVERY[s.deliveryMode] || "不明";
+              },
+            ],
+            ["成績評価", gradingText],
+            [
+              "前提条件",
+              function (s) {
+                return s.prerequisites || "記載なし";
+              },
+            ],
+            [
+              "対象学生・配当年次",
+              function (s) {
+                return (
+                  [s.eligibleAffiliations, s.allocatedYear]
+                    .filter(Boolean)
+                    .join(" / ") || "記載なし"
+                );
+              },
+            ],
+          ].forEach(function (row) {
+            var tr = el("tr");
+            tr.appendChild(el("th", null, row[0]));
+            selected.forEach(function (hit) {
+              tr.appendChild(el("td", null, row[1](hit.syllabus)));
+            });
+            body.appendChild(tr);
+          });
+          table.appendChild(body);
+          compareContent.appendChild(table);
+          compareDialog.showModal();
+        }
+
+        document
+          .getElementById("open-compare")
+          .addEventListener("click", showComparison);
+        document
+          .getElementById("close-compare")
+          .addEventListener("click", function () {
+            compareDialog.close();
+          });
+
+        function dashboardCard(label, count, detail) {
+          var card = el("div", "dashboard-card");
+          card.appendChild(el("h3", null, label));
+          card.appendChild(el("strong", null, String(count)));
+          if (detail) card.appendChild(el("div", "hint", detail));
+          return card;
+        }
+
+        function appendPersonalList(container, heading, entries) {
+          if (!entries || entries.length === 0) return;
+          container.appendChild(el("h3", null, heading));
+          var list = el("ul", "dashboard-list");
+          entries.slice(0, 5).forEach(function (entry) {
+            list.appendChild(el("li", null, entry));
+          });
+          container.appendChild(list);
+        }
+
+        function loadPersonalDashboard() {
+          fetch("/api/personal/dashboard")
+            .then(function (response) {
+              if (response.status === 404) return null;
+              return response.json().then(function (body) {
+                return { ok: response.ok, body: body };
+              });
+            })
+            .then(function (result) {
+              if (result === null) return;
+              personalDashboard.hidden = false;
+              if (!result.ok) {
+                var code = result.body.error && result.body.error.code;
+                personalConnect.hidden = ![
+                  "AUTH_REQUIRED",
+                  "SESSION_EXPIRED",
+                ].includes(code);
+                personalStatus.textContent =
+                  code === "AUTH_REQUIRED" || code === "SESSION_EXPIRED"
+                    ? "接続すると専用Chromeが開きます。ログインとMyWasedaの休講ページへの移動は本人が行ってください。"
+                    : "本人専用情報を読み込めませんでした。公開シラバス検索は引き続き利用できます。";
+                return;
+              }
+              personalConnect.hidden = true;
+              personalContent.replaceChildren();
+              var data = result.body;
+              personalStatus.textContent =
+                data.from +
+                "〜" +
+                data.to +
+                "の読み取り専用データ。成績・提出ファイル・フィードバックは扱いません。";
+              var grid = el("div", "dashboard-grid");
+              grid.appendChild(
+                dashboardCard(
+                  "Moodleの履修科目",
+                  data.courses.length,
+                  "正規科目のみ",
+                ),
+              );
+              grid.appendChild(
+                dashboardCard(
+                  "期限が近い課題",
+                  data.deadlines.length,
+                  "提出済みは除外",
+                ),
+              );
+              grid.appendChild(
+                dashboardCard("休講・変更", data.changes.length, "MyWaseda"),
+              );
+              personalContent.appendChild(grid);
+              appendPersonalList(
+                personalContent,
+                "期限が近い課題",
+                data.deadlines.map(function (deadline) {
+                  return (
+                    deadline.title +
+                    (deadline.dueAt
+                      ? " ・ " +
+                        new Date(deadline.dueAt).toLocaleString("ja-JP")
+                      : "")
+                  );
+                }),
+              );
+              appendPersonalList(
+                personalContent,
+                "休講・変更",
+                data.changes.map(function (change) {
+                  return (
+                    change.description +
+                    (change.effectiveDate ? " ・ " + change.effectiveDate : "")
+                  );
+                }),
+              );
+            })
+            .catch(function () {
+              // A network failure must not turn the public catalog into an
+              // error state, so the optional private panel stays hidden.
+            });
+        }
+
+        personalConnect.addEventListener("click", function () {
+          personalConnect.disabled = true;
+          personalStatus.textContent =
+            "専用Chromeを開いています。ログイン後、Moodleの科目ページとMyWasedaの休講ページまで進んでください。";
+          fetch("/api/personal/connect", { method: "POST" })
+            .then(function (response) {
+              return response.json().then(function (body) {
+                return { ok: response.ok, body: body };
+              });
+            })
+            .then(function (result) {
+              if (!result.ok) throw new Error("connect failed");
+              personalStatus.textContent =
+                "接続を確認しました。履修情報を読み込んでいます…";
+              loadPersonalDashboard();
+            })
+            .catch(function () {
+              personalStatus.textContent =
+                "接続を完了できませんでした。専用Chromeでログインを完了後、もう一度試してください。";
+            })
+            .finally(function () {
+              personalConnect.disabled = false;
+            });
+        });
 
         function setStatus(message, isError) {
           status.textContent = message;
@@ -659,8 +1649,8 @@
                 );
                 return;
               }
-              var hits = result.body.results || [];
-              if (hits.length === 0) {
+              allHits = result.body.results || [];
+              if (allHits.length === 0) {
                 setStatus(
                   "該当するシラバスが見つかりませんでした。語を変えるか、内容検索なら関連語を足してみてください。",
                   false,
@@ -668,17 +1658,7 @@
                 return;
               }
               setStatus("", false);
-              var meta = el(
-                "p",
-                "meta",
-                hits.length +
-                  "件 ・ 使用した検索語: " +
-                  (result.body.searchTerms || []).join(" / "),
-              );
-              results.appendChild(meta);
-              hits.forEach(function (hit) {
-                results.appendChild(renderHit(hit));
-              });
+              renderResults();
             })
             .catch(function () {
               setStatus(
@@ -690,6 +1670,7 @@
               submit.disabled = false;
             });
         });
+        loadPersonalDashboard();
       })();
     </script>
   </body>

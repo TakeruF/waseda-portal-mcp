@@ -50,6 +50,60 @@ class PublicOnlyFixtureSources implements WasedaSources {
   }
 }
 
+class AuthenticatedFixtureSources implements WasedaSources {
+  constructor(private readonly syllabusValue: Syllabus) {}
+  courses() {
+    return Promise.resolve([
+      {
+        id: "course-1",
+        institution: "waseda" as const,
+        name: "人工知能概論",
+        regular: true,
+        sourceRefs: this.syllabusValue.sourceRefs,
+      },
+    ]);
+  }
+  deadlines() {
+    return Promise.resolve([
+      {
+        id: "deadline-1",
+        courseId: "course-1",
+        title: "レポート",
+        activityType: "assignment" as const,
+        dueAt: "2026-09-05T12:00:00+09:00",
+        status: "not_submitted" as const,
+        url: "https://wsdmoodle.waseda.jp/mod/assign/view.php?id=1",
+        sourceRefs: this.syllabusValue.sourceRefs,
+      },
+    ]);
+  }
+  changes() {
+    return Promise.resolve([
+      {
+        id: "change-1",
+        type: "cancellation" as const,
+        effectiveDate: "2026-09-05",
+        description: "人工知能概論は休講",
+        sourceRefs: this.syllabusValue.sourceRefs,
+      },
+    ]);
+  }
+  syllabusByKey() {
+    return Promise.resolve(this.syllabusValue);
+  }
+  syllabusCandidates() {
+    return Promise.resolve([this.syllabusValue]);
+  }
+  searchSyllabusCatalog(input: { searchTerms: string[] }) {
+    return Promise.resolve([
+      { syllabus: this.syllabusValue, matchedSearchTerms: input.searchTerms },
+    ]);
+  }
+  academicEvents() {
+    return Promise.resolve([]);
+  }
+}
+
 function publicConfig(overrides: Partial<AppConfig> = {}): AppConfig {
   return loadConfig({
     publicOnly: true,
@@ -98,9 +152,14 @@ describe("public-only HTTP deployment", () => {
     const page = await fetch(`${origin}/`);
     expect(page.status).toBe(200);
     expect(page.headers.get("content-type")).toContain("text/html");
-    expect(await page.text()).toContain("シラバス検索");
+    const html = await page.text();
+    expect(html).toContain("シラバス検索");
+    expect(html).toContain("試験なし（明記）");
+    expect(html).toContain("曜日・評価方法などで絞り込む");
+    expect(html).toContain("比較する");
 
     expect((await fetch(`${origin}/admin`)).status).toBe(404);
+    expect((await fetch(`${origin}/api/personal/dashboard`)).status).toBe(404);
   });
 
   it("searches the catalog over the REST API", async () => {
@@ -183,6 +242,51 @@ describe("public-only HTTP deployment", () => {
       expect(second.headers.get("retry-after")).not.toBeNull();
     } finally {
       await limited.close();
+    }
+  });
+
+  it("serves the private Moodle and MyWaseda dashboard only outside public mode", async () => {
+    const privateAdapter = new WasedaAdapter(
+      new AuthenticatedFixtureSources(
+        parseSyllabus(
+          await fixtureSnapshot(
+            "syllabus.html",
+            "https://www.wsl.waseda.jp/syllabus/JAA104.php?pKey=SYNTH-101",
+          ),
+        ),
+      ),
+    );
+    let connectionStarted = false;
+    const privateServer = await startHttpServer({
+      adapter: privateAdapter,
+      config: publicConfig({ publicOnly: false }),
+      connectPersonalSession: () => {
+        connectionStarted = true;
+        return Promise.resolve();
+      },
+    });
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:${privateServer.port}/api/personal/dashboard`,
+      );
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as {
+        courses: unknown[];
+        deadlines: unknown[];
+        changes: unknown[];
+      };
+      expect(body.courses).toHaveLength(1);
+      expect(Array.isArray(body.deadlines)).toBe(true);
+      expect(Array.isArray(body.changes)).toBe(true);
+
+      const connect = await fetch(
+        `http://127.0.0.1:${privateServer.port}/api/personal/connect`,
+        { method: "POST" },
+      );
+      expect(connect.status).toBe(200);
+      expect(connectionStarted).toBe(true);
+    } finally {
+      await privateServer.close();
     }
   });
 });

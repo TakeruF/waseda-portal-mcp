@@ -25,6 +25,7 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "serve:public": "node dist/cli.js serve-http --public-only",
+    "serve:private": "node dist/cli.js serve-http",
     "start": "node dist/cli.js",
     "test": "vitest run tests/unit tests/integration",
     "test:e2e:authenticated": "vitest run tests/e2e/mcp-client.live.test.ts --no-file-parallelism --maxWorkers=1",

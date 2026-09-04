@@ -48,6 +48,18 @@ npm run auth
 
 キャッシュを無効にする場合は`args`へ`"--no-cache"`を追加します。stdioの標準出力はMCPプロトコル専用で、運用メッセージは標準エラーへ出します。
 
+## 本人専用Web UI（Moodle・MyWaseda）
+
+認証済みのMCPと同じ読み取り専用データを、本人のPC上のWeb UIでも確認できます。
+
+```bash
+npm run build
+npm run auth           # 専用Chromeで本人がログイン
+npm run serve:private  # http://127.0.0.1:8787
+```
+
+Web UIの「Moodle・MyWasedaに接続する」からも同じ専用Chromeを起動できます。ログインとMyWasedaの休講ページへの移動は本人が行います。Web UIはMoodleの正規履修科目・未完了の期限と、MyWasedaの履修科目向け休講／変更を表示します。成績、評点、フィードバック、提出ファイル名、履修登録の変更は扱いません。認証済みWeb UIは`127.0.0.1`、`localhost`、`::1`にしか待ち受けできず、外部公開やVercel配備はできません。
+
 ## 公開カタログの共有配備
 
 `--public-only`（または`WASEDA_PORTAL_PUBLIC_ONLY=true`）は、公開Webシラバスと公開学事日程だけを読む共有可能なモードです。認証セッションを持たず、個人情報を扱わず、**ブラウザも起動しません**。

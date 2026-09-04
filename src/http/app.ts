@@ -11,6 +11,7 @@ import type { AppConfig } from "../config/config.js";
 import { asPortalError } from "../core/errors/portal-error.js";
 import type { PortalErrorCode } from "../core/errors/portal-error.js";
 import { syllabusCatalogSearchInputSchema } from "../core/models/inputs.js";
+import { datesInRange, jstDayBounds } from "../core/time/jst.js";
 import { createMcpServer } from "../mcp-server.js";
 import {
   getSyllabusOutputSchema,
@@ -48,6 +49,8 @@ export interface FetchAppDeps {
   adapter: WasedaAdapter;
   config: AppConfig;
   onError?: (error: Error) => void;
+  /** Starts the owner-controlled, local browser authentication flow. */
+  connectPersonalSession?: () => Promise<void>;
 }
 
 export interface FetchApp {
@@ -94,6 +97,22 @@ function notFound(pathname: string): Response {
   });
 }
 
+function jstDate(offsetDays = 0): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const value = (type: string): string =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  const date = new Date(
+    `${value("year")}-${value("month")}-${value("day")}T12:00:00Z`,
+  );
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+}
+
 async function readJsonBody(request: Request): Promise<unknown> {
   const raw = await request.text();
   if (raw.length > MAX_REQUEST_BODY_BYTES)
@@ -135,6 +154,7 @@ export function createFetchApp(deps: FetchAppDeps): FetchApp {
     mcpLimiter.prune();
   }, BUCKET_PRUNE_INTERVAL_MS);
   pruneTimer.unref?.();
+  let connectionInProgress: Promise<void> | undefined;
 
   async function handleSearch(request: Request): Promise<Response> {
     const query = syllabusCatalogSearchInputSchema.parse(
@@ -170,6 +190,42 @@ export function createFetchApp(deps: FetchAppDeps): FetchApp {
     );
   }
 
+  /**
+   * This route exists only for the loopback, authenticated server. It returns
+   * the same intentionally small, read-only models exposed through MCP: no
+   * grades, feedback, filenames, credentials, or raw portal pages.
+   */
+  async function handlePersonalDashboard(): Promise<Response> {
+    const from = jstDate();
+    const to = jstDate(7);
+    const bounds = datesInRange(from, to).map(jstDayBounds);
+    const [courses, deadlines, changes] = await Promise.all([
+      adapter.listCourses({ includeNonRegular: false }),
+      adapter.listDeadlines({
+        from: bounds[0]!.from,
+        to: bounds.at(-1)!.to,
+        includeCompleted: false,
+      }),
+      adapter.listChanges({ from, to }),
+    ]);
+    return json(200, { from, to, courses, deadlines, changes });
+  }
+
+  async function handlePersonalConnect(): Promise<Response> {
+    if (deps.connectPersonalSession === undefined)
+      return json(501, {
+        error: {
+          code: "CONNECT_UNAVAILABLE",
+          message: "This server cannot start the local authentication flow.",
+        },
+      });
+    connectionInProgress ??= deps.connectPersonalSession().finally(() => {
+      connectionInProgress = undefined;
+    });
+    await connectionInProgress;
+    return json(200, { status: "connected" });
+  }
+
   async function route(request: Request): Promise<Response> {
     const rejected =
       (config.httpAllowedHosts.length === 0
@@ -196,6 +252,15 @@ export function createFetchApp(deps: FetchAppDeps): FetchApp {
       return new Response(method === "HEAD" ? null : html, {
         headers: HTML_HEADERS,
       });
+    }
+
+    if (url.pathname === "/api/personal/dashboard" && method === "GET") {
+      if (config.publicOnly) return notFound(url.pathname);
+      return handlePersonalDashboard();
+    }
+    if (url.pathname === "/api/personal/connect" && method === "POST") {
+      if (config.publicOnly) return notFound(url.pathname);
+      return handlePersonalConnect();
     }
 
     const isMcp = url.pathname === "/mcp";

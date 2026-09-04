@@ -82,9 +82,27 @@ async function main(): Promise<void> {
     : "authenticated";
 
   if (command === "serve-http") {
+    if (
+      !config.publicOnly &&
+      !["127.0.0.1", "::1", "localhost"].includes(config.httpHost)
+    )
+      throw new Error(
+        "Authenticated Web UI must bind to loopback only. Use --public-only for a shared deployment.",
+      );
     const http = await startHttpServer({
       adapter,
       config,
+      ...(config.publicOnly
+        ? {}
+        : {
+            connectPersonalSession: async () => {
+              // BrowserSession may already have opened the same dedicated
+              // profile to report AUTH_REQUIRED. Release that lock before the
+              // visible, owner-controlled authentication flow starts.
+              await source.close();
+              await runAuth(config);
+            },
+          }),
       onError: (error) => {
         console.error(`http error: ${error.message}`);
       },
