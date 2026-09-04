@@ -845,6 +845,17 @@
         );
         syncMode();
 
+        var incomingParameters = new URLSearchParams(window.location.search);
+        var incomingAffiliation = incomingParameters.get("affiliation");
+        var incomingYear = incomingParameters.get("year");
+        var incomingProfileMode = incomingParameters.get("profileMode");
+        if (incomingAffiliation)
+          filterControls.affiliation.value = incomingAffiliation;
+        if (/^[1-6]$/.test(incomingYear || ""))
+          filterControls.year.value = incomingYear;
+        if (["priority", "hide-conflicts", "off"].includes(incomingProfileMode))
+          filterControls.profileMode.value = incomingProfileMode;
+
         Array.prototype.forEach.call(
           document.querySelectorAll("[data-preset]"),
           function (button) {
@@ -1670,6 +1681,11 @@
               submit.disabled = false;
             });
         });
+        var initialQuery = new URLSearchParams(window.location.search).get("q");
+        if (initialQuery && initialQuery.trim().length >= 2) {
+          document.getElementById("query").value = initialQuery.trim();
+          form.requestSubmit();
+        }
         loadPersonalDashboard();
       })();
     </script>
