@@ -234,6 +234,45 @@
         color: var(--accent);
         border: 1px solid var(--border);
       }
+      .grading {
+        border-top: 1px solid var(--border);
+        margin: 4px 0 12px;
+        padding-top: 11px;
+      }
+      .grading h3 {
+        color: var(--muted);
+        font-size: 12.5px;
+        font-weight: 600;
+        margin: 0 0 7px;
+      }
+      .grading-list {
+        display: grid;
+        gap: 7px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      .grading-item {
+        align-items: baseline;
+        background: var(--surface-2);
+        border-radius: 7px;
+        display: grid;
+        gap: 3px 10px;
+        grid-template-columns: 4.5em 1fr;
+        padding: 7px 9px;
+      }
+      .grading-weight {
+        color: var(--accent);
+        font-size: 14px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+      }
+      .grading-description {
+        color: var(--muted);
+        font-size: 12.5px;
+        grid-column: 1 / -1;
+        white-space: pre-wrap;
+      }
       details {
         border-top: 1px solid var(--border);
         padding-top: 9px;
@@ -407,6 +446,67 @@
           dl.appendChild(el("dd", null, value));
         }
 
+        // Web Syllabus emits grading as text copied from a small table, for
+        // example "試験: 60％ 期末試験". Turn those rows into scan-friendly
+        // items, but keep unrecognised prose intact below as a normal field.
+        function gradingItems(evaluation) {
+          if (!evaluation) return [];
+          return String(evaluation)
+            .split(/\n+/)
+            .map(function (line) {
+              return line.trim();
+            })
+            .filter(function (line) {
+              return line && !/^割合\s+評価基準$/.test(line);
+            })
+            .map(function (line) {
+              var match = line.match(
+                /^(.+?)(?:\s*[:：]\s*|\s+)([0-9０-９]+(?:[.．][0-9０-９]+)?\s*[%％])(?:\s+(.+))?$/,
+              );
+              if (!match) return null;
+              return {
+                label: match[1].trim().replace(/[:：]$/, ""),
+                weight: match[2].replace(/\s+/g, ""),
+                description: (match[3] || "").trim(),
+              };
+            })
+            .filter(function (item) {
+              return item !== null;
+            });
+        }
+
+        function gradingSection(items) {
+          if (items.length === 0) return null;
+          var section = el("section", "grading");
+          section.appendChild(el("h3", null, "成績評価"));
+          var list = el("ul", "grading-list");
+          items.forEach(function (item) {
+            var row = el("li", "grading-item");
+            row.appendChild(el("span", null, item.label));
+            row.appendChild(el("strong", "grading-weight", item.weight));
+            if (item.description)
+              row.appendChild(
+                el("span", "grading-description", item.description),
+              );
+            list.appendChild(row);
+          });
+          section.appendChild(list);
+          return section;
+        }
+
+        function isExamAlreadyInGrading(exam, items) {
+          if (!exam) return false;
+          var normalizedExam = String(exam).replace(/\s+/g, " ").trim();
+          return items.some(function (item) {
+            if (!/試験/.test(item.label)) return false;
+            return (
+              (item.weight + " " + item.description)
+                .replace(/\s+/g, " ")
+                .trim() === normalizedExam
+            );
+          });
+        }
+
         function scheduleText(schedules) {
           if (!schedules || schedules.length === 0) return "";
           return schedules
@@ -458,11 +558,15 @@
           addRow(dl, "授業方式", DELIVERY[s.deliveryMode] || s.deliveryMode);
           addRow(dl, "配当年次", s.allocatedYear);
           addRow(dl, "科目コード", s.publicCourseCode || s.classCode);
-          addRow(dl, "成績評価", s.evaluation);
-          addRow(dl, "試験", s.exam);
+          var grading = gradingItems(s.evaluation);
+          if (grading.length === 0) addRow(dl, "成績評価", s.evaluation);
+          if (!isExamAlreadyInGrading(s.exam, grading))
+            addRow(dl, "試験", s.exam);
           addRow(dl, "対象者", s.eligibleAffiliations);
           addRow(dl, "前提条件", s.prerequisites);
           if (dl.childNodes.length > 0) card.appendChild(dl);
+          var gradingBlock = gradingSection(grading);
+          if (gradingBlock) card.appendChild(gradingBlock);
 
           // 成績評価 and 試験 are shown above; the collapsed section keeps
           // the long-form fields a student only reads occasionally.
