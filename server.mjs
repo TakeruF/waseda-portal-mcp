@@ -13,9 +13,8 @@ let appError;
 async function handlerFor(req, res) {
   if (app === undefined && appError === undefined) {
     try {
-      const { createPublicCatalogHandler } = await import(
-        "./dist/http/public-server.js"
-      );
+      const { createPublicCatalogHandler } =
+        await import("./dist/http/public-server.js");
       app = createPublicCatalogHandler();
     } catch (error) {
       appError = error;
@@ -44,4 +43,6 @@ const server = createServer((req, res) => {
   });
 });
 
-server.listen(Number(process.env.PORT ?? process.env.WASEDA_PORTAL_HTTP_PORT ?? 8787));
+server.listen(
+  Number(process.env.PORT ?? process.env.WASEDA_PORTAL_HTTP_PORT ?? 8787),
+);
