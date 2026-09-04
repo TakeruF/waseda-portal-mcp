@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>早稲田 シラバス検索（非公式）</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f6f6f4;
+        --surface: #ffffff;
+        --surface-2: #f0f0ee;
+        --border: #ddddd8;
+        --text: #1d1d1b;
+        --muted: #6a6a63;
+        --accent: #8a1538;
+        --accent-soft: #f3e6ea;
+        --warn-bg: #fdf4e3;
+        --warn-border: #e6d3a8;
+        --radius: 10px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #17181a;
+          --surface: #202225;
+          --surface-2: #292b2f;
+          --border: #35383d;
+          --text: #ececea;
+          --muted: #9a9a95;
+          --accent: #e8899f;
+          --accent-soft: #33222a;
+          --warn-bg: #2c2618;
+          --warn-border: #4d432a;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          system-ui,
+          -apple-system,
+          "Hiragino Kaku Gothic ProN",
+          "Noto Sans JP",
+          sans-serif;
+        line-height: 1.7;
+        font-size: 15px;
+      }
+      .wrap {
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 28px 18px 80px;
+      }
+      header h1 {
+        font-size: 20px;
+        margin: 0 0 6px;
+        letter-spacing: 0.01em;
+      }
+      .lede {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 0 4px;
+      }
+      .notice {
+        background: var(--warn-bg);
+        border: 1px solid var(--warn-border);
+        border-radius: var(--radius);
+        padding: 10px 14px;
+        font-size: 12.5px;
+        color: var(--muted);
+        margin: 16px 0 22px;
+      }
+      form {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px;
+      }
+      fieldset {
+        border: 0;
+        margin: 0 0 14px;
+        padding: 0;
+      }
+      legend,
+      label.block {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 6px;
+        padding: 0;
+      }
+      input[type="text"],
+      input[type="number"] {
+        width: 100%;
+        padding: 9px 11px;
+        font: inherit;
+        font-size: 15px;
+        color: var(--text);
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      input:focus-visible,
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      .modes {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .mode {
+        flex: 1 1 220px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        cursor: pointer;
+        background: var(--surface-2);
+      }
+      .mode:has(input:checked) {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .mode input {
+        margin-right: 6px;
+      }
+      .mode strong {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .mode span {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+        margin-left: 20px;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .row > * {
+        flex: 1 1 200px;
+      }
+      .hint {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 5px 0 0;
+      }
+      button.submit {
+        width: 100%;
+        padding: 11px;
+        font: inherit;
+        font-weight: 600;
+        color: #fff;
+        background: var(--accent);
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      button.submit:disabled {
+        opacity: 0.55;
+        cursor: progress;
+      }
+      #status {
+        margin: 20px 0 0;
+        font-size: 13.5px;
+        color: var(--muted);
+      }
+      #status.error {
+        color: #c0392b;
+      }
+      @media (prefers-color-scheme: dark) {
+        #status.error {
+          color: #ff9c8f;
+        }
+      }
+      .meta {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 18px 0 10px;
+      }
+      article {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px 18px;
+        margin-bottom: 14px;
+      }
+      article h2 {
+        font-size: 16.5px;
+        margin: 0 0 3px;
+        line-height: 1.45;
+      }
+      .sub {
+        font-size: 12.5px;
+        color: var(--muted);
+        margin: 0 0 12px;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 4px 14px;
+        margin: 0 0 12px;
+        font-size: 13.5px;
+      }
+      dt {
+        color: var(--muted);
+        font-size: 12.5px;
+      }
+      dd {
+        margin: 0;
+      }
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+      .tag {
+        font-size: 11.5px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        border: 1px solid var(--border);
+      }
+      details {
+        border-top: 1px solid var(--border);
+        padding-top: 9px;
+        margin-top: 4px;
+      }
+      details summary {
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      details .body {
+        white-space: pre-wrap;
+        font-size: 13.5px;
+        margin-top: 8px;
+      }
+      details h3 {
+        font-size: 12.5px;
+        color: var(--muted);
+        margin: 12px 0 2px;
+      }
+      a {
+        color: var(--accent);
+      }
+      footer {
+        margin-top: 34px;
+        font-size: 12px;
+        color: var(--muted);
+        border-top: 1px solid var(--border);
+        padding-top: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>早稲田 シラバス検索（非公式）</h1>
+        <p class="lede">
+          公式Webシラバスを検索する非公式ツールです。早稲田大学とは無関係で、大学による承認・保証・サポートはありません。
+        </p>
+      </header>
+
+      <p class="notice">
+        読み取るのは<strong>公開されているシラバスのみ</strong>です。Moodleの履修情報、MyWasedaの休講情報、課題や締切、成績、個人情報は一切扱いません。ログインも不要です。表示内容は参考情報であり、履修可否・登録期間・定員・教室は必ず公式情報でご確認ください。
+      </p>
+
+      <form id="search-form">
+        <fieldset>
+          <legend>探し方</legend>
+          <div class="modes">
+            <label class="mode">
+              <input type="radio" name="mode" value="course_name" checked />
+              <strong>科目名で探す</strong>
+              <span>科目名がおおよそ分かっているとき</span>
+            </label>
+            <label class="mode">
+              <input type="radio" name="mode" value="content" />
+              <strong>内容から探す</strong>
+              <span>学びたいテーマから探すとき</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <label class="block" for="query">検索語</label>
+          <input
+            type="text"
+            id="query"
+            name="query"
+            required
+            minlength="2"
+            maxlength="120"
+            placeholder="例: 統計学入門 / 日本の貨幣の歴史を学びたい"
+            autocomplete="off"
+          />
+        </fieldset>
+
+        <fieldset id="related-wrap" hidden>
+          <label class="block" for="related"
+            >関連語（任意・最大3語、カンマ区切り）</label
+          >
+          <input
+            type="text"
+            id="related"
+            name="related"
+            placeholder="例: 貨幣, 通貨, 経済史"
+            autocomplete="off"
+          />
+          <p class="hint">
+            内容検索は公式の全項目キーワード検索を使う字句検索です。同義語を補うとヒットしやすくなります。
+          </p>
+        </fieldset>
+
+        <fieldset>
+          <div class="row">
+            <div>
+              <label class="block" for="max">表示件数（1〜5）</label>
+              <input
+                type="number"
+                id="max"
+                name="max"
+                min="1"
+                max="5"
+                value="3"
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <button class="submit" type="submit" id="submit">検索する</button>
+      </form>
+
+      <p id="status" role="status" aria-live="polite"></p>
+      <div id="results"></div>
+
+      <footer>
+        非公式・read-only。出典は各カードのリンク先（公式Webシラバス）を確認してください。
+      </footer>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var DELIVERY = {
+          in_person: "対面",
+          online: "オンライン",
+          on_demand: "オンデマンド",
+          hybrid: "ハイブリッド",
+          unknown: "不明",
+        };
+        var FIELDS = {
+          courseName: "科目名",
+          overview: "概要",
+          plan: "授業計画",
+          evaluation: "成績評価",
+          exam: "試験",
+        };
+
+        var form = document.getElementById("search-form");
+        var status = document.getElementById("status");
+        var results = document.getElementById("results");
+        var submit = document.getElementById("submit");
+        var relatedWrap = document.getElementById("related-wrap");
+
+        function selectedMode() {
+          return form.querySelector('input[name="mode"]:checked').value;
+        }
+
+        function syncMode() {
+          relatedWrap.hidden = selectedMode() !== "content";
+        }
+
+        Array.prototype.forEach.call(
+          form.querySelectorAll('input[name="mode"]'),
+          function (input) {
+            input.addEventListener("change", syncMode);
+          },
+        );
+        syncMode();
+
+        function el(tag, className, text) {
+          var node = document.createElement(tag);
+          if (className) node.className = className;
+          if (text !== undefined && text !== null) node.textContent = text;
+          return node;
+        }
+
+        function addRow(dl, term, value) {
+          if (value === undefined || value === null || value === "") return;
+          dl.appendChild(el("dt", null, term));
+          dl.appendChild(el("dd", null, value));
+        }
+
+        function scheduleText(schedules) {
+          if (!schedules || schedules.length === 0) return "";
+          return schedules
+            .map(function (s) {
+              var base = s.weekdayLabel + s.period;
+              var place = [s.campus, s.room].filter(Boolean).join(" ");
+              return place ? base + "（" + place + "）" : base;
+            })
+            .join(" / ");
+        }
+
+        function detailSection(container, heading, body) {
+          if (!body) return;
+          container.appendChild(el("h3", null, heading));
+          container.appendChild(el("div", "body", body));
+        }
+
+        function renderHit(hit) {
+          var s = hit.syllabus;
+          var card = el("article");
+
+          card.appendChild(el("h2", null, s.courseName));
+          card.appendChild(
+            el(
+              "p",
+              "sub",
+              [
+                s.year ? s.year + "年度" : "",
+                s.school,
+                (s.instructors || []).join("、"),
+              ]
+                .filter(Boolean)
+                .join(" ・ "),
+            ),
+          );
+
+          var tags = el("div", "tags");
+          (hit.matchedTerms || []).forEach(function (term) {
+            tags.appendChild(el("span", "tag", "一致: " + term));
+          });
+          (hit.matchedFields || []).forEach(function (field) {
+            tags.appendChild(el("span", "tag", FIELDS[field] || field));
+          });
+          if (tags.childNodes.length > 0) card.appendChild(tags);
+
+          var dl = el("dl");
+          addRow(dl, "学期", s.term);
+          addRow(dl, "曜日時限", scheduleText(s.schedules));
+          addRow(dl, "授業方式", DELIVERY[s.deliveryMode] || s.deliveryMode);
+          addRow(dl, "配当年次", s.allocatedYear);
+          addRow(dl, "科目コード", s.publicCourseCode || s.classCode);
+          addRow(dl, "対象者", s.eligibleAffiliations);
+          addRow(dl, "前提条件", s.prerequisites);
+          if (dl.childNodes.length > 0) card.appendChild(dl);
+
+          if (s.overview || s.plan || s.evaluation || s.exam) {
+            var details = el("details");
+            details.appendChild(el("summary", null, "詳細を開く"));
+            var body = el("div");
+            detailSection(body, "概要", s.overview);
+            detailSection(body, "授業計画", s.plan);
+            detailSection(body, "成績評価", s.evaluation);
+            detailSection(body, "試験", s.exam);
+            details.appendChild(body);
+            card.appendChild(details);
+          }
+
+          var refs = s.sourceRefs || [];
+          if (refs.length > 0) {
+            var p = el("p", "hint");
+            var link = el("a", null, "公式シラバスを開く");
+            link.href = refs[0].url;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            p.appendChild(link);
+            p.appendChild(
+              document.createTextNode(
+                " ・ 取得 " +
+                  new Date(refs[0].observedAt).toLocaleString("ja-JP"),
+              ),
+            );
+            card.appendChild(p);
+          }
+
+          return card;
+        }
+
+        function setStatus(message, isError) {
+          status.textContent = message;
+          status.className = isError ? "error" : "";
+        }
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          var query = document.getElementById("query").value.trim();
+          if (query.length < 2) {
+            setStatus("検索語は2文字以上で入力してください。", true);
+            return;
+          }
+          var mode = selectedMode();
+          var related =
+            mode === "content"
+              ? document
+                  .getElementById("related")
+                  .value.split(/[,、]/)
+                  .map(function (term) {
+                    return term.trim();
+                  })
+                  .filter(Boolean)
+                  .slice(0, 3)
+              : [];
+
+          results.innerHTML = "";
+          submit.disabled = true;
+          setStatus(
+            "検索中です。公式サイトへの負荷を抑えるため数十秒かかることがあります…",
+            false,
+          );
+
+          fetch("/api/syllabi/search", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              query: query,
+              mode: mode,
+              relatedTerms: related,
+              maxResults: Number(document.getElementById("max").value) || 3,
+              useAcademicProfile: false,
+            }),
+          })
+            .then(function (response) {
+              return response.json().then(function (body) {
+                return { ok: response.ok, body: body };
+              });
+            })
+            .then(function (result) {
+              if (!result.ok) {
+                var error = (result.body && result.body.error) || {};
+                setStatus(
+                  "エラー: " +
+                    (error.message || "検索に失敗しました") +
+                    (error.code ? "（" + error.code + "）" : ""),
+                  true,
+                );
+                return;
+              }
+              var hits = result.body.results || [];
+              if (hits.length === 0) {
+                setStatus(
+                  "該当するシラバスが見つかりませんでした。語を変えるか、内容検索なら関連語を足してみてください。",
+                  false,
+                );
+                return;
+              }
+              setStatus("", false);
+              var meta = el(
+                "p",
+                "meta",
+                hits.length +
+                  "件 ・ 使用した検索語: " +
+                  (result.body.searchTerms || []).join(" / "),
+              );
+              results.appendChild(meta);
+              hits.forEach(function (hit) {
+                results.appendChild(renderHit(hit));
+              });
+            })
+            .catch(function () {
+              setStatus(
+                "通信に失敗しました。時間をおいて再試行してください。",
+                true,
+              );
+            })
+            .finally(function () {
+              submit.disabled = false;
+            });
+        });
+      })();
+    </script>
+  </body>
+</html>

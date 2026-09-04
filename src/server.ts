@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/server";
+import type * as z from "zod/v4";
 
 import type { WasedaAdapter } from "./adapters/waseda/waseda-adapter.js";
 import { asPortalError } from "./core/errors/portal-error.js";
@@ -14,6 +15,7 @@ import {
   listCoursesOutputSchema,
   listDeadlinesOutputSchema,
   listDeadlinesToolInputSchema,
+  publicGetSyllabusInputSchema,
   searchSyllabiInputSchema,
   searchSyllabiOutputSchema,
 } from "./tools/schemas.js";
@@ -24,6 +26,21 @@ const READ_ONLY_ANNOTATIONS = {
   idempotentHint: true,
   openWorldHint: true,
 };
+
+const FULL_INSTRUCTIONS =
+  "Unofficial read-only Waseda portal integration. Use search_syllabi with mode=course_name for any known title and mode=content for a learning goal. For content discovery, provide up to three concise relatedTerms when useful. Treat provenance and warnings as authoritative; never infer enrollment eligibility, a room, exam, or syllabus match when ambiguity is reported.";
+
+const PUBLIC_INSTRUCTIONS =
+  "Unofficial read-only Waseda Web Syllabus catalog. This deployment reads only publicly available syllabus pages: there is no Moodle enrollment, no MyWaseda cancellation notice, no deadline, and no personal data. Use search_syllabi with mode=course_name for a known title and mode=content for a learning goal, with up to three concise relatedTerms. Treat provenance and warnings as authoritative and never assert enrollment eligibility.";
+
+export interface McpServerOptions {
+  /**
+   * Register only the tools that read public Waseda pages. A public-only
+   * server never touches Moodle or MyWaseda, so it needs no authenticated
+   * session and can be shared by several people.
+   */
+  publicOnly?: boolean;
+}
 
 function success<T extends Record<string, unknown>>(value: T) {
   return {
@@ -47,15 +64,10 @@ function failure(error: unknown) {
   };
 }
 
-export function createMcpServer(adapter: WasedaAdapter): McpServer {
-  const server = new McpServer(
-    { name: "waseda-portal-mcp", version: "0.1.0" },
-    {
-      instructions:
-        "Unofficial read-only Waseda portal integration. Use search_syllabi with mode=course_name for any known title and mode=content for a learning goal. For content discovery, provide up to three concise relatedTerms when useful. Treat provenance and warnings as authoritative; never infer enrollment eligibility, a room, exam, or syllabus match when ambiguity is reported.",
-    },
-  );
-
+function registerAuthenticatedTools(
+  server: McpServer,
+  adapter: WasedaAdapter,
+): void {
   server.registerTool(
     "get_day_brief",
     {
@@ -148,18 +160,27 @@ export function createMcpServer(adapter: WasedaAdapter): McpServer {
       }
     },
   );
+}
 
+function registerGetSyllabus(
+  server: McpServer,
+  adapter: WasedaAdapter,
+  publicOnly: boolean,
+): void {
   server.registerTool(
     "get_syllabus",
     {
       title: "Get a Waseda syllabus",
-      description:
-        "Resolve a course to Web Syllabus using weighted evidence, or return candidates without asserting an ambiguous match.",
-      inputSchema: getSyllabusInputSchema,
+      description: publicOnly
+        ? "Read one public Web Syllabus entry by its syllabusKey, as returned by search_syllabi."
+        : "Resolve a course to Web Syllabus using weighted evidence, or return candidates without asserting an ambiguous match.",
+      inputSchema: publicOnly
+        ? publicGetSyllabusInputSchema
+        : getSyllabusInputSchema,
       outputSchema: getSyllabusOutputSchema,
       annotations: READ_ONLY_ANNOTATIONS,
     },
-    async (input) => {
+    async (input: z.infer<typeof getSyllabusInputSchema>) => {
       try {
         return success(
           getSyllabusOutputSchema.parse({
@@ -172,7 +193,12 @@ export function createMcpServer(adapter: WasedaAdapter): McpServer {
       }
     },
   );
+}
 
+function registerSearchSyllabi(
+  server: McpServer,
+  adapter: WasedaAdapter,
+): void {
   server.registerTool(
     "search_syllabi",
     {
@@ -212,6 +238,21 @@ export function createMcpServer(adapter: WasedaAdapter): McpServer {
       }
     },
   );
+}
+
+export function createMcpServer(
+  adapter: WasedaAdapter,
+  options: McpServerOptions = {},
+): McpServer {
+  const publicOnly = options.publicOnly ?? false;
+  const server = new McpServer(
+    { name: "waseda-portal-mcp", version: "0.1.0" },
+    { instructions: publicOnly ? PUBLIC_INSTRUCTIONS : FULL_INSTRUCTIONS },
+  );
+
+  if (!publicOnly) registerAuthenticatedTools(server, adapter);
+  registerGetSyllabus(server, adapter, publicOnly);
+  registerSearchSyllabi(server, adapter);
 
   return server;
 }

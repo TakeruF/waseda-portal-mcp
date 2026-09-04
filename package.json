@@ -10,6 +10,7 @@
   "exports": "./dist/server.js",
   "files": [
     "dist",
+    "public",
     "docs",
     "README.md",
     "SECURITY.md",
@@ -19,17 +20,19 @@
     "auth": "tsx src/cli.ts auth",
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsx src/cli.ts",
+    "dev:public": "tsx src/cli.ts serve-http --public-only",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
+    "serve:public": "node dist/cli.js serve-http --public-only",
     "start": "node dist/cli.js",
     "test": "vitest run tests/unit tests/integration",
+    "test:e2e:authenticated": "vitest run tests/e2e/mcp-client.live.test.ts --no-file-parallelism --maxWorkers=1",
+    "test:e2e:catalog": "vitest run tests/e2e/syllabus-catalog-client.live.test.ts --no-file-parallelism --maxWorkers=1",
     "test:live": "npm run test:live:authenticated",
     "test:live:auth-state": "vitest run tests/live/auth-state.live.test.ts --no-file-parallelism --maxWorkers=1",
     "test:live:authenticated": "vitest run tests/live/authenticated.live.test.ts --no-file-parallelism --maxWorkers=1",
     "test:live:catalog": "vitest run tests/live/syllabus-catalog.live.test.ts --no-file-parallelism --maxWorkers=1",
-    "test:e2e:authenticated": "vitest run tests/e2e/mcp-client.live.test.ts --no-file-parallelism --maxWorkers=1",
-    "test:e2e:catalog": "vitest run tests/e2e/syllabus-catalog-client.live.test.ts --no-file-parallelism --maxWorkers=1",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
@@ -43,6 +46,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@modelcontextprotocol/node": "^2.0.0",
     "@modelcontextprotocol/server": "^2.0.0",
     "cheerio": "^1.2.0",
     "playwright": "^1.62.1",

@@ -13,7 +13,7 @@ export async function runAuth(config: AppConfig): Promise<void> {
     "Log in through Waseda SSO yourself and wait for the Moodle course page. Credentials are never requested by this CLI.",
   );
   const context = await chromium.launchPersistentContext(config.profileDir, {
-    channel: "chrome",
+    ...(config.browserChannel === "" ? {} : { channel: config.browserChannel }),
     headless: false,
     acceptDownloads: false,
   });

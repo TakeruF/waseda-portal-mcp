@@ -3,6 +3,13 @@ import path from "node:path";
 
 export interface AppConfig {
   timezone: "Asia/Tokyo";
+  publicOnly: boolean;
+  httpHost: string;
+  httpPort: number;
+  httpAllowedHosts: string[];
+  httpAllowedOrigins: string[];
+  httpRequestsPerMinute: number;
+  httpMaxConcurrentRequests: number;
   profileDir: string;
   authStatePath: string;
   academicProfilePath: string;
@@ -11,6 +18,8 @@ export interface AppConfig {
   cacheTtlMs: number;
   maskCourseNamesInLogs: boolean;
   headless: boolean;
+  /** Playwright browser channel. Empty selects Playwright's bundled Chromium, which is what container images ship. */
+  browserChannel: string;
   navigationTimeoutMs: number;
   minAccessIntervalMs: number;
   maxCourses?: number;
@@ -23,12 +32,41 @@ function envBoolean(value: string | undefined, fallback: boolean): boolean {
   return !["0", "false", "no"].includes(value.toLowerCase());
 }
 
+function envList(value: string | undefined): string[] {
+  if (value === undefined) return [];
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
 export function loadConfig(overrides: Partial<AppConfig> = {}): AppConfig {
+  const publicOnly = envBoolean(
+    process.env.WASEDA_PORTAL_PUBLIC_ONLY,
+    overrides.publicOnly ?? false,
+  );
   return {
     timezone: "Asia/Tokyo",
+    publicOnly,
+    httpHost: process.env.WASEDA_PORTAL_HTTP_HOST ?? "127.0.0.1",
+    httpPort: Number(
+      process.env.WASEDA_PORTAL_HTTP_PORT ?? process.env.PORT ?? 8787,
+    ),
+    httpAllowedHosts: envList(process.env.WASEDA_PORTAL_HTTP_ALLOWED_HOSTS),
+    httpAllowedOrigins: envList(process.env.WASEDA_PORTAL_HTTP_ALLOWED_ORIGINS),
+    httpRequestsPerMinute: Number(
+      process.env.WASEDA_PORTAL_HTTP_REQUESTS_PER_MINUTE ?? 20,
+    ),
+    httpMaxConcurrentRequests: Number(
+      process.env.WASEDA_PORTAL_HTTP_MAX_CONCURRENT_REQUESTS ?? 4,
+    ),
     profileDir:
       process.env.WASEDA_PORTAL_PROFILE_DIR ??
-      path.join(os.homedir(), ".waseda-portal-mcp", "chrome-profile"),
+      path.join(
+        os.homedir(),
+        ".waseda-portal-mcp",
+        publicOnly ? "chrome-profile-public" : "chrome-profile",
+      ),
     authStatePath:
       process.env.WASEDA_PORTAL_AUTH_STATE_PATH ??
       path.join(os.homedir(), ".waseda-portal-mcp", "auth-state.json"),
@@ -50,6 +88,7 @@ export function loadConfig(overrides: Partial<AppConfig> = {}): AppConfig {
       true,
     ),
     headless: envBoolean(process.env.WASEDA_PORTAL_HEADLESS, true),
+    browserChannel: process.env.WASEDA_PORTAL_BROWSER_CHANNEL ?? "chrome",
     navigationTimeoutMs: Number(process.env.WASEDA_PORTAL_TIMEOUT_MS ?? 30_000),
     minAccessIntervalMs: Number(
       process.env.WASEDA_PORTAL_MIN_ACCESS_INTERVAL_MS ?? 250,

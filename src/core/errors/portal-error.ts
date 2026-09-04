@@ -7,6 +7,7 @@ export const portalErrorCodes = [
   "AMBIGUOUS_COURSE_MATCH",
   "RATE_LIMITED",
   "READ_ONLY_VIOLATION",
+  "HOST_NOT_ALLOWED",
 ] as const;
 
 export type PortalErrorCode = (typeof portalErrorCodes)[number];

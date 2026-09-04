@@ -24,12 +24,48 @@ const MOODLE_READ_ONLY_METHODS = new Set([
 
 export type AllowedReadOnlyPost = "syllabus_search" | "moodle_read";
 
+export interface ReadOnlyGuardOptions {
+  /**
+   * When set, only https requests to these hosts may leave the browser. A
+   * public-only deployment passes the public Waseda hosts, which removes
+   * Moodle and MyWaseda from reach regardless of any stored cookie.
+   */
+  allowedHosts?: readonly string[];
+}
+
 export class ReadOnlyGuard {
+  readonly #allowedHosts: Set<string> | undefined;
+
+  constructor(options: ReadOnlyGuardOptions = {}) {
+    this.#allowedHosts =
+      options.allowedHosts === undefined
+        ? undefined
+        : new Set(options.allowedHosts);
+  }
+
+  /**
+   * Rejects any network request outside the configured host allowlist. Schemes
+   * that never reach a Waseda origin (`about:`, `data:`, `blob:`) are ignored.
+   */
+  assertAllowedHost(rawUrl: string): void {
+    if (this.#allowedHosts === undefined) return;
+    const url = new URL(rawUrl);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return;
+    if (url.protocol === "https:" && this.#allowedHosts.has(url.hostname))
+      return;
+    throw new PortalError(
+      "HOST_NOT_ALLOWED",
+      `Blocked a request outside the public host allowlist: ${url.hostname}`,
+      { host: url.hostname, url: this.redactUrl(rawUrl) },
+    );
+  }
+
   assertSafeRequest(
     method: string,
     rawUrl: string,
     postData?: string | null,
   ): void {
+    this.assertAllowedHost(rawUrl);
     const normalizedMethod = method.toUpperCase();
     const url = new URL(rawUrl);
     const safeSearchPayload =

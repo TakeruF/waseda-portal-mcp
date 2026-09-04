@@ -8,3 +8,13 @@ export const WASEDA_URLS = {
   academicCalendar:
     "https://www.waseda.jp/top/about/work/organizations/academic-affairs-division/academic-calendar",
 } as const;
+
+/**
+ * Hosts that serve Waseda information without any authenticated session. A
+ * public-only deployment is restricted to these, so it cannot reach Moodle or
+ * MyWaseda even if a stale profile directory still holds cookies.
+ */
+export const PUBLIC_WASEDA_HOSTS = [
+  "www.wsl.waseda.jp",
+  "www.waseda.jp",
+] as const;

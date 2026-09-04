@@ -48,6 +48,27 @@ npm run auth
 
 キャッシュを無効にする場合は`args`へ`"--no-cache"`を追加します。stdioの標準出力はMCPプロトコル専用で、運用メッセージは標準エラーへ出します。
 
+## 公開カタログの共有配備
+
+`--public-only`（または`WASEDA_PORTAL_PUBLIC_ONLY=true`）は、公開Webシラバスと公開学事日程だけを読む共有可能なモードです。認証セッションを持たず、個人情報を扱いません。
+
+```bash
+npm run build
+npm run serve:public   # http://127.0.0.1:8787
+```
+
+このモードでは`ReadOnlyGuard`が`www.wsl.waseda.jp`と`www.waseda.jp`へのhttpsリクエストだけを通し、それ以外は送信前に`HOST_NOT_ALLOWED`で遮断します。Moodle、MyWaseda、class.waseda.jp、SSOにはプロセスから到達できません。`auth-state.json`、学修プロフィール、`courseId → syllabusKey`対応表も読み込まず、MCPツールは`search_syllabi`と`get_syllabus`（`syllabusKey`のみ）の2つだけになります。
+
+入口は3つです。
+
+- `/mcp`: MCP streamable HTTP。MCPクライアントから接続します
+- `/api/syllabi/search`（POST）と`/api/syllabi/:syllabusKey`（GET）: JSON API
+- `/`: アカウント不要のWeb UI
+
+既定のレート制限はクライアントごとに`/api`が毎分20回、`/mcp`がその5倍、共有ブラウザの同時使用は4です。上流の早稲田側アクセスはプロセス全体で1本に直列化されます。
+
+認証ありモードは本人のSSOセッションを保持します。他人が到達できる場所では動かさないでください。Dockerでの配備、HTTPS、環境変数、MCPクライアント登録手順は[docs/deployment.md](docs/deployment.md)にあります。
+
 ## ツール
 
 - `get_day_brief`: `date`（`YYYY-MM-DD`）の授業、変更、当日締切、未提出の期限超過を統合
@@ -111,14 +132,14 @@ fixtureはすべて人工データです。実データをissue、ログ、fixtu
 
 ## エラー
 
-`AUTH_REQUIRED`、`SESSION_EXPIRED`、`MAINTENANCE`、`SOURCE_UNAVAILABLE`、`PAGE_STRUCTURE_CHANGED`、`AMBIGUOUS_COURSE_MATCH`、`RATE_LIMITED`、`READ_ONLY_VIOLATION`を区別します。主要selectorが消えた場合は空配列を成功扱いせず、`PAGE_STRUCTURE_CHANGED`を返します。正規の空リスト用コンテナを確認できた場合だけ空配列を返します。
+`AUTH_REQUIRED`、`SESSION_EXPIRED`、`MAINTENANCE`、`SOURCE_UNAVAILABLE`、`PAGE_STRUCTURE_CHANGED`、`AMBIGUOUS_COURSE_MATCH`、`RATE_LIMITED`、`READ_ONLY_VIOLATION`、`HOST_NOT_ALLOWED`を区別します。`HOST_NOT_ALLOWED`は公開カタログモードで許可ホスト外へのリクエストを遮断したことを表します。主要selectorが消えた場合は空配列を成功扱いせず、`PAGE_STRUCTURE_CHANGED`を返します。正規の空リスト用コンテナを確認できた場合だけ空配列を返します。
 
 未認証なら`npm run auth`を実行してください。構造変更なら、個人情報を含まない最小のDOM構造を人工fixtureとして再現し、対象parserとfixtureテストを更新します。認証済みの生HTMLをissueやコミットへ追加しないでください。
 
 ## 開発と検証
 
 ```bash
-npm test             # 外部アクセスなしの人工fixtureテスト
+npm test             # 外部アクセスなしの人工fixtureテスト（HTTP配備の統合テストを含む）
 npm run typecheck
 npm run lint
 npm run format:check
@@ -140,7 +161,8 @@ npm run test:e2e:catalog         # search_syllabiのstdio E2E
 - MyWasedaは履修科目向け初期表示のみで、学部全体表示のPOST操作は実装していません。
 - 授業回は、確定できたシラバスの曜日時限と学期・休業日から生成します。集中・補講・個別回の自由記述は断定しません。
 - Moodleとシラバスの照合は年度、開講箇所、正規化科目名、クラス、担当者、利用可能なら曜日時限を根拠にします。Moodle名とシラバス名が異なる場合は担当者の部分一致で候補を最大件数まで取得します。根拠が弱い、または上位候補の差が小さい場合は曖昧候補だけを返し、教室・試験情報を確定しません。
-- 常駐通知、書き込み、成績取得、教材一括取得、カレンダートークン、Chrome拡張、クラウド認証、リモートMCP、複数大学は対象外です。
+- 常駐通知、書き込み、成績取得、教材一括取得、カレンダートークン、Chrome拡張、クラウド認証、複数大学は対象外です。
+- リモートMCPは公開シラバス限定の`--public-only`モードだけで提供します。認証済みポータルをクラウドで扱う予定はありません。SSO資格情報や`auth-state.json`をサーバーへ渡す運用は想定していません。
 
 ## 他大学adapter
 

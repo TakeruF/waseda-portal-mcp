@@ -8,6 +8,7 @@ import {
 } from "playwright";
 
 import type { AppConfig } from "../config/config.js";
+import { PUBLIC_WASEDA_HOSTS } from "../config/urls.js";
 import { PortalError } from "../core/errors/portal-error.js";
 import { ReadOnlyGuard } from "./read-only-guard.js";
 
@@ -43,6 +44,7 @@ export interface RequestAuditSnapshot {
   moodleReadPostsAllowed: number;
   unsafeRequestsBlockedBeforeSend: number;
   mutationRequestsAllowed: number;
+  offHostRequestsBlocked: number;
 }
 
 export function detectPortalAccessFailure(
@@ -81,7 +83,7 @@ export function detectPortalAccessFailure(
 }
 
 export class BrowserSession implements PageReader {
-  readonly #guard = new ReadOnlyGuard();
+  readonly #guard: ReadOnlyGuard;
   readonly #audit = {
     totalRequestsSeen: 0,
     readRequestsAllowed: 0,
@@ -89,10 +91,15 @@ export class BrowserSession implements PageReader {
     moodleReadPostsAllowed: 0,
     unsafeRequestsBlockedBeforeSend: 0,
     mutationRequestsAllowed: 0,
+    offHostRequestsBlocked: 0,
   };
   #contextPromise: Promise<BrowserContext> | undefined;
 
-  constructor(private readonly config: AppConfig) {}
+  constructor(private readonly config: AppConfig) {
+    this.#guard = new ReadOnlyGuard(
+      config.publicOnly ? { allowedHosts: PUBLIC_WASEDA_HOSTS } : {},
+    );
+  }
 
   async read(url: string): Promise<PageSnapshot> {
     this.#guard.assertSafeRequest("GET", url);
@@ -164,16 +171,20 @@ export class BrowserSession implements PageReader {
     const context = await chromium.launchPersistentContext(
       this.config.profileDir,
       {
-        channel: "chrome",
+        ...(this.config.browserChannel === ""
+          ? {}
+          : { channel: this.config.browserChannel }),
         headless: this.config.headless,
         acceptDownloads: false,
         serviceWorkers: "block",
       },
     );
-    try {
-      await context.setStorageState(this.config.authStatePath);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    if (!this.config.publicOnly) {
+      try {
+        await context.setStorageState(this.config.authStatePath);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
     }
     context.setDefaultNavigationTimeout(this.config.navigationTimeoutMs);
     await context.route("**/*", async (route) => {
@@ -201,8 +212,10 @@ export class BrowserSession implements PageReader {
           this.#audit.moodleReadPostsAllowed += 1;
         else this.#audit.readRequestsAllowed += 1;
         await route.continue();
-      } catch {
-        this.#audit.unsafeRequestsBlockedBeforeSend += 1;
+      } catch (error) {
+        if (error instanceof PortalError && error.code === "HOST_NOT_ALLOWED")
+          this.#audit.offHostRequestsBlocked += 1;
+        else this.#audit.unsafeRequestsBlockedBeforeSend += 1;
         await route.abort("blockedbyclient");
       }
     });

@@ -38,6 +38,11 @@ export const getSyllabusInputSchema = z
     },
   );
 
+/** Public deployments resolve a syllabus only by its own key, never through a Moodle course. */
+export const publicGetSyllabusInputSchema = z.object({
+  syllabusKey: z.string().min(1),
+});
+
 export const searchSyllabiInputSchema = syllabusCatalogSearchInputSchema;
 
 export const dayBriefSchema = z.object({
